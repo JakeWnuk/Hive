@@ -8,6 +8,8 @@ from ipaddress import ip_address
 # needs argv
 # should this be in /16 rather than /24
 # is nmaptocsv the best way to agg results?
+# pack the bee with more?
+# add curler to bee? sc
 
 
 async def gen_ip_range(start, end):
@@ -86,7 +88,7 @@ class Hive:
         Tells bee class to scan all of the given ranges with multi-threading and found targets are harvested
         """
         printer("! ! ! DEPLOYING SWARM ! ! !", warn=True)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
             executor.map(Bee.is_alive, self.Bees)
 
         live_bees = []
@@ -98,9 +100,19 @@ class Hive:
 
     def report(self):
         printer("Hive Completed. Number of successful bees: " + str(len(self.Bees)), event=True)
+        out_csv = ""
         for i in self.Bees:
             printer(str(i._get_range()[0]) + "/24", event=True)
+            out_csv += str(i._get_harvest())
 
+        string_match ='"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
+        str1 = string_match
+        out_csv = out_csv.replace(str1, "")
+        out_csv = string_match + '\n' + out_csv
+
+        with open("output-csv.txt", "w") as text_file:
+            print(f"TotalAmount{out_csv}", file=text_file)
+        printer("Hive has completed. Have a nice day :)", warn=True)
 
 class Bee:
     """
@@ -113,6 +125,7 @@ class Bee:
         self.live = False
         self.harvest = harvest
         self.verbose = verbose
+        self.enumResults = ""
 
     def is_alive(self):
         """
@@ -143,13 +156,17 @@ class Bee:
         """
         return self.ipRange
 
+    def _get_harvest(self):
+        return self.enumResults
+
     def _harvest(self):
         printer("Starting Nmap for " + self.name, event=True)
-        out = os.popen('nmap -n -Pn -p 80,443,22,21,23 ' + str(self.ipRange[0]) + "-255 2>/dev/null | nmaptocsv").read()
+        out = os.popen('nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(self.ipRange[0]) + "-255 2>/dev/null | nmaptocsv").read()
         printer("Nmap finished for " + self.name, event=True)
+        self.enumResults = out
 
 
 if __name__ == '__main__':
-    myHive = Hive(harvest=False, verbose=True)
+    myHive = Hive(harvest=True, verbose=False)
     myHive.operate()
     myHive.report()

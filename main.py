@@ -3,13 +3,8 @@ import concurrent.futures
 import os
 import time
 from ipaddress import ip_address
-
-
-# needs argv
-# should this be in /16 rather than /24
-# is nmaptocsv the best way to agg results?
-# pack the bee with more?
-# add curler to bee? sc
+import argparse
+import re
 
 
 async def gen_ip_range(start, end):
@@ -52,11 +47,31 @@ def printer(msg, event=False, error=False, warn=False):
     if warn:
         print(f'{bcolors.WARNING}{bcolors.BOLD}[ * ] [{tm}] {msg}{bcolors.ENDC}')
     elif error:
-        print(f'{bcolors.FAIL}{bcolors.UNDERLINE}[ ! ] [{tm}] {msg}{bcolors.ENDC}')
+        print(f'{bcolors.FAIL}[ ! ] [{tm}] {msg}{bcolors.ENDC}')
     elif event:
         print(f'{bcolors.OKGREEN}[ + ] [{tm}] {msg}{bcolors.ENDC}')
     else:
         print(f'{bcolors.OKCYAN}[ - ] [{tm}] {msg}{bcolors.ENDC}')
+
+
+def parse_range(string):
+    ip_rng = string.split("-")
+    return [(ip_rng[0], ip_rng[1])]
+
+
+async def run(cmd, return_stdout=False, do_print=False):
+    proc = await asyncio.create_subprocess_shell(
+        cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE)
+
+    stdout, stderr = await proc.communicate()
+    if proc.returncode == 0 and do_print:
+        printer(f"{cmd!r} exited with {proc.returncode}", event=True)
+    elif do_print:
+        printer(f"{cmd!r} exited with {proc.returncode}", error=True)
+    if return_stdout:
+        return stdout.decode('ascii').rstrip()
 
 
 class Hive:
@@ -64,11 +79,86 @@ class Hive:
     Hive Jobs: creates the bees, operates the bees for scanning and enum, and aggregates the bees reports
     """
 
-    def __init__(self, harvest=False, verbose=True):
-        self.SubnetList = [
-            ("192.168.0.0", "192.168.255.255")]  # , ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.16.255.255")]
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target=""):
+
+        if ip_target != "":
+            printer("Starting recon and enumeration on " + str(ip_target) + "...", warn=True)
+            asyncio.run(self._target_enum(ip_target, verbose))
+            exit()
+
+        if ip_range != "":
+            self.SubnetList = ip_range
+        else:
+            self.SubnetList = [
+                ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.16.255.255")]
+
         self.Bees = []
-        asyncio.run(self._gen_bees(harvest, verbose))
+        try:
+            asyncio.run(self._gen_bees(harvest, verbose))
+        except ValueError:
+            printer("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
+            exit()
+
+    @staticmethod
+    async def _target_enum(ip_target, verbose):
+        stdout = await asyncio.gather(
+            run(
+                "host " + ip_target + " | tee host-" + ip_target + ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee ipv4-" + ip_target + ".txt",
+                return_stdout=True, do_print=verbose),
+            run(
+                "host " + ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee ipv6-" + ip_target + ".txt",
+                return_stdout=True, do_print=verbose),
+            run(
+                "whois " + ip_target + " | tee whois-" + ip_target + ".txt | tr -cd '\11\12\15\40-\176'",
+                return_stdout=True, do_print=verbose),
+            run(
+                "dig " + ip_target + " +nostats +nocomments +nocmd | tee dig-" + ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
+                return_stdout=True, do_print=verbose),
+            run(
+                "nmap -sS -Pn -p- -oN ./basic-nmap-ss-" + ip_target + ".txt " + ip_target + " --resolve-all",
+                return_stdout=True,
+                do_print=verbose),
+            run(
+                "nmap -sU -Pn --top-ports 1000 -oN ./basic-nmap-su-" + ip_target + ".txt " + ip_target + " --resolve-all",
+                do_print=verbose)
+        )
+
+        # get results of host and dig to make sure they align for ipv4
+        dig_ips = re.sub(r'\t', '', stdout[3]).split('\n')
+        host_ips = stdout[0].split('\n')
+        dig_ips.sort()
+        host_ips.sort()
+
+        # use information to build profile
+        ipv4 = stdout[0].split('\n')
+        ipv6 = stdout[1].split('\n')
+
+        # read the nmap results for a port list
+        ports = await run(
+            "cat ./basic-nmap-s* | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee ./ports-" + ip_target + ".txt",
+            return_stdout=True, do_print=verbose)
+
+        # report
+        printer("Found IPv4 Addresses: " + str(ipv4), warn=True)
+        printer("Found IPv6 Addresses: " + str(ipv6), warn=True)
+        ports = ports.split('\n')
+        printer("Found Ports: " + str(ports), warn=True)
+        port_str = ','.join([str(elem) for elem in ports])
+
+        # kick off targeted NSE script
+        await run(
+            "nmap -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN ./targeted-nmap-ssu-" + ip_target + ".txt " + ip_target,
+            do_print=verbose)
+
+        try:
+            if dig_ips != host_ips:
+                printer("The dig and host command results do not align. Might be a LB.", warn=True)
+            if "No match for" in stdout[2]:
+                printer("No whois match found for given domain.", warn=True)
+            if "0 hosts up" in stdout[4]:
+                printer("Nmap failed to resolve a target for the given domain.", error=True)
+        except ValueError:
+            printer("Error when reviewing results!", error=True)
 
     async def _gen_bees(self, harvest, verbose):
         """
@@ -102,10 +192,10 @@ class Hive:
         printer("Hive Completed. Number of successful bees: " + str(len(self.Bees)), event=True)
         out_csv = ""
         for i in self.Bees:
-            printer(str(i._get_range()[0]) + "/24", event=True)
-            out_csv += str(i._get_harvest())
+            printer(str(i.get_range()[0]) + "/24", event=True)
+            out_csv += str(i.get_harvest())
 
-        string_match ='"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
+        string_match = '"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
         str1 = string_match
         out_csv = out_csv.replace(str1, "")
         out_csv = string_match + '\n' + out_csv
@@ -113,6 +203,7 @@ class Hive:
         with open("output-csv.txt", "w") as text_file:
             print(f"TotalAmount{out_csv}", file=text_file)
         printer("Hive has completed. Have a nice day :)", warn=True)
+
 
 class Bee:
     """
@@ -126,6 +217,23 @@ class Bee:
         self.harvest = harvest
         self.verbose = verbose
         self.enumResults = ""
+
+    def get_status(self):
+        """
+        Bee reports if its range is alive
+        :return: bool
+        """
+        return self.live
+
+    def get_range(self):
+        """
+        Bee reports its assigned IP range
+        :return: tuple
+        """
+        return self.ipRange
+
+    def get_harvest(self):
+        return self.enumResults
 
     def is_alive(self):
         """
@@ -142,31 +250,33 @@ class Bee:
             if self.harvest:
                 self._harvest()
 
-    def get_status(self):
-        """
-        Bee reports if its range is alive
-        :return: bool
-        """
-        return self.live
-
-    def _get_range(self):
-        """
-        Bee reports its assigned IP range
-        :return: tuple
-        """
-        return self.ipRange
-
-    def _get_harvest(self):
-        return self.enumResults
-
     def _harvest(self):
         printer("Starting Nmap for " + self.name, event=True)
-        out = os.popen('nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(self.ipRange[0]) + "-255 2>/dev/null | nmaptocsv").read()
+        out = os.popen(
+            'nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(
+                self.ipRange[0]) + "-255 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = out
 
 
 if __name__ == '__main__':
-    myHive = Hive(harvest=True, verbose=False)
+    parser = argparse.ArgumentParser(
+        description='Network reconnaissance tool to discover hosts, ports, and perform basic recon.')
+    parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="increase output verbosity")
+    parser.add_argument("-t", "--target", action="store", default=False,
+                        help="Enumerates only one target. This will port scan!")
+    parser.add_argument("-r", "--range", type=parse_range, action="store", default=False,
+                        help="Enter an IP range instead of predefined private range")
+    parser.add_argument("-n", "--noscan", action="store_false", default=True,
+                        help="Only performs fping and no enumeration. Not valid with -t!")
+    args = parser.parse_args()
+
+    if args.target:
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target)
+    elif args.range:
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range)
+    else:
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity)
+
     myHive.operate()
     myHive.report()

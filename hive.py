@@ -146,7 +146,7 @@ class Hive:
         """
         Function used for single target enumeration
         """
-        printer("Starting recon and enumeration on " + str(ip_target) + "...", warn=True)
+        printer("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
         stdout = await asyncio.gather(
             run(
                 "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target + ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" + self.ip_target + ".txt",

@@ -32,17 +32,18 @@ def chunk_list(lst, n):
     return [lst[i:i + n] for i in range(0, len(lst), n)]
 
 
-def printer(msg, event=False, error=False, warn=False):
+def printer(msg, io=False, event=False, error=False, warn=False):
     """
     Prints formatted text to CLI
+    :param io: start and end message
     :param msg: string to be displayed
     :param event: bool changes visual for events
     :param error: bool changes visual for errors
     :param warn: bool changes visual for warnings
     """
 
-    class bcolors:
-        HEADER = '\033[95m'
+    class colors:
+        HEADER = '\033[5m'
         OKBLUE = '\033[94m'
         OKCYAN = '\033[96m'
         OKGREEN = "\033[32m"
@@ -51,17 +52,22 @@ def printer(msg, event=False, error=False, warn=False):
         ENDC = '\033[0m'
         BOLD = '\033[1m'
         UNDERLINE = '\033[4m'
+        BGBLACK = '\033[40m'
+        CYAN = '\033[36m'
 
     tm = time.strftime("%H:%M:%S")
 
-    if warn:
-        print(f'{bcolors.WARNING}{bcolors.BOLD}[ * ] [{tm}] {msg}{bcolors.ENDC}')
+    if io:
+        print(
+            f'{colors.HEADER}{colors.CYAN}{colors.BGBLACK}{colors.BOLD}[ Buzz ][ BzzZzzZzz ] {msg} [ Buzz ][ BzzZzzZzz ]{colors.ENDC}')
+    elif warn:
+        print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
-        print(f'{bcolors.FAIL}[ ! ] [{tm}] {msg}{bcolors.ENDC}')
+        print(f'{colors.FAIL}[ ! ] [{tm}] {msg}{colors.ENDC}')
     elif event:
-        print(f'{bcolors.OKGREEN}[ + ] [{tm}] {msg}{bcolors.ENDC}')
+        print(f'{colors.OKGREEN}[ + ] [{tm}] {msg}{colors.ENDC}')
     else:
-        print(f'{bcolors.OKCYAN}[ - ] [{tm}] {msg}{bcolors.ENDC}')
+        print(f'{colors.OKCYAN}[ - ] [{tm}] {msg}{colors.ENDC}')
 
 
 def parse_range(string):
@@ -101,7 +107,7 @@ class Hive:
     Hive Jobs: creates the bees, operates the bees for scanning and enum, and aggregates the bees reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir=""):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=60):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -109,52 +115,58 @@ class Hive:
         :param ip_target: used in args parser to enum a target rather than host discovery
         :param work_dir: working directory for results
         """
+        self.harvest = harvest
+        self.verbose = verbose
+        self.ip_range = ip_range
+        self.ip_target = ip_target
         self.wd = work_dir
+        self.Bees = []
+        self.threads = threads
+
+        printer("Welcome to Hive!", io=True)
+        printer("NUMBER OF CURRENT THREADS: " + str(threads), warn=True)
 
         if ip_target != "":
-            printer("Starting recon and enumeration on " + str(ip_target) + "...", warn=True)
-            asyncio.run(self._target_enum(ip_target, verbose))
+            asyncio.run(self._target_enum())
             exit()
 
         if ip_range != "":
-            self.SubnetList = ip_range
+            self.subnet_list = ip_range
         else:
-            self.SubnetList = [
+            self.subnet_list = [
                 ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.16.255.255")]
 
-        self.Bees = []
         try:
-            asyncio.run(self._gen_bees(harvest, verbose))
+            asyncio.run(self._gen_bees())
         except ValueError:
             printer("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
             exit()
 
-    async def _target_enum(self, ip_target, verbose):
+    async def _target_enum(self):
         """
         Function used for single target enumeration
-        :param ip_target: ip address target could also be a TLD
-        :param verbose: bool for verbosity
         """
+        printer("Starting recon and enumeration on " + str(ip_target) + "...", warn=True)
         stdout = await asyncio.gather(
             run(
-                "host " + ip_target + " | tee " + self.wd + "/target/host-" + ip_target + ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" + ip_target + ".txt",
-                return_stdout=True, do_print=verbose),
+                "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target + ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" + self.ip_target + ".txt",
+                return_stdout=True, do_print=self.verbose),
             run(
-                "host " + ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee " + self.wd + "/target/ipv6-" + ip_target + ".txt",
-                return_stdout=True, do_print=verbose),
+                "host " + self.ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee " + self.wd + "/target/ipv6-" + self.ip_target + ".txt",
+                return_stdout=True, do_print=self.verbose),
             run(
-                "whois " + ip_target + " | tee " + self.wd + "/target/whois-" + ip_target + ".txt | tr -cd '\11\12\15\40-\176'",
-                return_stdout=True, do_print=verbose),
+                "whois " + self.ip_target + " | tee " + self.wd + "/target/whois-" + self.ip_target + ".txt | tr -cd '\11\12\15\40-\176'",
+                return_stdout=True, do_print=self.verbose),
             run(
-                "dig " + ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" + ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
-                return_stdout=True, do_print=verbose),
+                "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" + self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
+                return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + ip_target + ".txt " + ip_target + " --resolve-all",
+                "nmap -sS -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --resolve-all",
                 return_stdout=True,
-                do_print=verbose),
+                do_print=self.verbose),
             run(
-                "nmap -sU -Pn --top-ports 1000 -oN " + self.wd + "/target/basic-nmap-su-" + ip_target + ".txt " + ip_target + " --resolve-all",
-                do_print=verbose)
+                "nmap -sU -Pn --top-ports 1000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --resolve-all",
+                do_print=self.verbose)
         )
 
         # get results of host and dig to make sure they align for ipv4
@@ -169,8 +181,8 @@ class Hive:
 
         # read the nmap results for a port list
         ports = await run(
-            "cat " + self.wd + "/target/basic-nmap-s*-" + ip_target + ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd + "/target/ports-" + ip_target + ".txt",
-            return_stdout=True, do_print=verbose)
+            "cat " + self.wd + "/target/basic-nmap-s*-" + self.ip_target + ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd + "/target/ports-" + self.ip_target + ".txt",
+            return_stdout=True, do_print=self.verbose)
 
         # report findings
         printer("Found IPv4 Addresses: " + str(ipv4), warn=True)
@@ -181,8 +193,8 @@ class Hive:
 
         # kick off targeted NSE script
         await run(
-            "nmap -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" + ip_target + ".txt " + ip_target,
-            do_print=verbose)
+            "nmap -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target + ".txt " + self.ip_target,
+            do_print=self.verbose)
 
         # check results
         try:
@@ -195,26 +207,24 @@ class Hive:
         except ValueError:
             printer("Error when reviewing results!", error=True)
 
-    async def _gen_bees(self, harvest, verbose):
+    async def _gen_bees(self):
         """
         Generate bee objects for the hive
-        :param harvest: bool to run enumeration scan on found ips
-        :param verbose: bool for verbosity
         """
         ip_ranges = await asyncio.gather(
-            *(gen_ip_range(itr[0], itr[1]) for itr in self.SubnetList)
+            *(gen_ip_range(itr[0], itr[1]) for itr in self.subnet_list)
         )
         for i in ip_ranges:
             split_ip_ranges = chunk_list(i, 256)
             for x in split_ip_ranges:
-                self.Bees.append(Bee(x[0], x[-1], harvest, verbose))
+                self.Bees.append(Bee(x[0], x[-1], self.harvest, self.verbose))
 
     def operate(self):
         """
         Tells bee class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
         printer("! ! ! DEPLOYING SWARM ! ! !", warn=True)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=60) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.threads)) as executor:
             executor.map(Bee.is_alive, self.Bees)
 
         live_bees = []
@@ -246,7 +256,7 @@ class Hive:
 
         with open(self.wd + "/hive-output.txt", "w") as text_file:
             print(out_csv, file=text_file)
-        printer("Hive has completed. Have a nice day :)", warn=True)
+        printer("Hive has completed. Have a nice day :)", io=True)
 
 
 class Bee:
@@ -314,14 +324,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Network reconnaissance tool to discover hosts, ports, and perform targeted recon.')
     group = parser.add_mutually_exclusive_group()
-    parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="increase output verbosity")
+    parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
     group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
-                       help="Enter an IP range instead of predefined private range")
+                       help="Enter an IP range instead of predefined private range.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
-                        help="Only performs fping and no enumeration. Not valid with -t")
+                        help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
+    parser.add_argument("-th", "--threads", action="store", default=60,
+                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 60.")
     args = parser.parse_args()
 
     # confirm top directory exists; if not, populate it
@@ -332,11 +344,13 @@ if __name__ == '__main__':
 
     # kick off
     if args.target:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd,
+                      threads=args.threads)
     elif args.range:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd,
+                      threads=args.threads)
     else:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, threads=args.threads)
 
     myHive.operate()
     myHive.report()

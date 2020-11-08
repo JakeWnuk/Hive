@@ -32,10 +32,10 @@ def chunk_list(lst, n):
     return [lst[i:i + n] for i in range(0, len(lst), n)]
 
 
-def printer(msg, io=False, event=False, error=False, warn=False):
+def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
     """
     Prints formatted text to CLI
-    :param io: start and end message
+    :param intro: start message
     :param msg: string to be displayed
     :param event: bool changes visual for events
     :param error: bool changes visual for errors
@@ -43,7 +43,7 @@ def printer(msg, io=False, event=False, error=False, warn=False):
     """
 
     class colors:
-        HEADER = '\033[5m'
+        BLINK = '\033[5m'
         OKBLUE = '\033[94m'
         OKCYAN = '\033[96m'
         OKGREEN = "\033[32m"
@@ -54,12 +54,15 @@ def printer(msg, io=False, event=False, error=False, warn=False):
         UNDERLINE = '\033[4m'
         BGBLACK = '\033[40m'
         CYAN = '\033[36m'
+        INVERT = '\033[7m'
 
     tm = time.strftime("%H:%M:%S")
 
-    if io:
+    if intro:
         print(
-            f'{colors.HEADER}{colors.CYAN}{colors.BGBLACK}{colors.BOLD}[ Buzz ][ BzzZzzZzz ] {msg} [ Buzz ][ BzzZzzZzz ]{colors.ENDC}')
+            f'{colors.INVERT}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
+    elif end:
+        print( f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
@@ -123,7 +126,7 @@ class Hive:
         self.Bees = []
         self.threads = threads
 
-        printer("Welcome to Hive!", io=True)
+        printer("Welcome to Hive!", intro=True)
         printer("NUMBER OF CURRENT THREADS: " + str(threads), warn=True)
 
         if ip_target != "":
@@ -207,6 +210,8 @@ class Hive:
         except ValueError:
             printer("Error when reviewing results!", error=True)
 
+        printer("Hive has completed. Have a nice day :)", end=True)
+
     async def _gen_bees(self):
         """
         Generate bee objects for the hive
@@ -256,7 +261,7 @@ class Hive:
 
         with open(self.wd + "/hive-output.txt", "w") as text_file:
             print(out_csv, file=text_file)
-        printer("Hive has completed. Have a nice day :)", io=True)
+        printer("Hive has completed. Have a nice day :)", end=True)
 
 
 class Bee:

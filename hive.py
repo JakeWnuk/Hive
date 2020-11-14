@@ -138,7 +138,7 @@ class Hive:
             self.subnet_list = ip_range
         else:
             self.subnet_list = [
-                ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.16.255.255")]
+                ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.31.255.255")]
 
         try:
             asyncio.run(self._gen_bees())
@@ -323,7 +323,7 @@ class Bee:
         printer("Starting Nmap for " + self.name, event=True)
         out = os.popen(
             'nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(
-                self.ipRange[0]) + "-" + str(self.ipRange[1][-3:]) + " 2>/dev/null | nmaptocsv 2>/dev/null").read()
+                self.ipRange[0]) + "/24 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = out
 

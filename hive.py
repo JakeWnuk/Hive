@@ -35,6 +35,7 @@ def chunk_list(lst, n):
 def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
     """
     Prints formatted text to CLI
+    :param end: ending message
     :param intro: start message
     :param msg: string to be displayed
     :param event: bool changes visual for events
@@ -62,7 +63,7 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
         print(
             f'{colors.INVERT}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
     elif end:
-        print( f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
+        print(f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
@@ -222,7 +223,7 @@ class Hive:
         for i in ip_ranges:
             split_ip_ranges = chunk_list(i, 256)
             for x in split_ip_ranges:
-                self.Bees.append(Bee(x[0], x[-1], self.harvest, self.verbose))
+                self.Bees.append(Bee(x[0], x[-1], x, self.harvest, self.verbose))
 
     def operate(self):
         """
@@ -247,9 +248,9 @@ class Hive:
         out_csv = ""
         out_subs = ""
         for i in self.Bees:
-            printer(str(i.get_range()[0]) + "/24", event=True)
+            printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]), event=True)
             out_csv += str(i.get_harvest())
-            out_subs += str(i.get_range()[0]) + "/24\n"
+            out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
         string_match = '"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
         str1 = string_match
@@ -269,9 +270,10 @@ class Bee:
     Bees are given an IP range to scan and then harvest IP's if their range has an alive IP address inside
     """
 
-    def __init__(self, ip_start, ip_end, harvest=False, verbose=True):
+    def __init__(self, ip_start, ip_end, ip_list, harvest=False, verbose=True):
         self.name = "Bee-" + str(ip_start) + "-" + str(ip_end)
         self.ipRange = (ip_start, ip_end)
+        self.ipList = ip_list
         self.live = False
         self.harvest = harvest
         self.verbose = verbose
@@ -302,7 +304,8 @@ class Bee:
         """
         Tells if the Bee's assigned IP range has alive IP's inside
         """
-        out = os.popen('fping -a -i 2 -r 4 -g ' + str(self.ipRange[0]) + '/24  2> /dev/null').read()
+        out = os.popen(
+            'fping -a -i 2 -r 4 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
         if out == "":
             if self.verbose:
@@ -320,7 +323,7 @@ class Bee:
         printer("Starting Nmap for " + self.name, event=True)
         out = os.popen(
             'nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(
-                self.ipRange[0]) + "-255 2>/dev/null | nmaptocsv 2>/dev/null").read()
+                self.ipRange[0]) + "-" + str(self.ipRange[1][-3:]) + " 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = out
 

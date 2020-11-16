@@ -269,7 +269,7 @@ class Hive:
         df = pd.read_csv(file_str, sep=";")
         df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
-        df.to_excel(self.wd + "/hive-output.xlsx")
+        df.to_csv(self.wd + "/hive-output.csv")
 
         with open(self.wd + "/subs.txt", "w") as text_file:
             print(f"Found Subs: \n{out_subs}", file=text_file)

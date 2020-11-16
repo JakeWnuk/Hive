@@ -19,7 +19,7 @@ async def gen_ip_range(start, end):
     :param end:  end IPv4 address
     :return: list of ips
     """
-    printer("Generating buzz for " + str(start) + " - " + str(end), event=True)
+    printer("Generating drones for " + str(start) + " - " + str(end), event=True)
     start_int = int(ip_address(start).packed.hex(), 16)
     end_int = int(ip_address(end).packed.hex(), 16)
     return [ip_address(ip).exploded for ip in range(start_int, end_int)]
@@ -64,9 +64,9 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
 
     if intro:
         print(
-            f'{colors.INVERT}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
+            f'{colors.INVERT}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
     elif end:
-        print(f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ Buzz ] {msg} [ Buzz ]{colors.ENDC}')
+        print(f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
@@ -111,7 +111,7 @@ async def run(cmd, return_stdout=False, do_print=False):
 
 class Hive:
     """
-    Hive Jobs: creates the bees, operates the bees for scanning and enum, and aggregates the bees reports
+    Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
     def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=60):
@@ -127,7 +127,7 @@ class Hive:
         self.ip_range = ip_range
         self.ip_target = ip_target
         self.wd = work_dir
-        self.Bees = []
+        self.Drones = []
         self.threads = threads
 
         printer("Welcome to Hive!", intro=True)
@@ -149,7 +149,7 @@ class Hive:
                 ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.31.255.255")]
 
         try:
-            asyncio.run(self._gen_bees())
+            asyncio.run(self._gen_drones())
         except ValueError:
             printer("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
             exit()
@@ -221,9 +221,9 @@ class Hive:
 
         printer("Hive has completed. Have a nice day :)", end=True)
 
-    async def _gen_bees(self):
+    async def _gen_drones(self):
         """
-        Generate bee objects for the hive
+        Generate drone objects for the hive
         """
         ip_ranges = await asyncio.gather(
             *(gen_ip_range(itr[0], itr[1]) for itr in self.subnet_list)
@@ -231,31 +231,31 @@ class Hive:
         for i in ip_ranges:
             split_ip_ranges = chunk_list(i, 256)
             for x in split_ip_ranges:
-                self.Bees.append(Bee(x[0], x[-1], x, self.harvest, self.verbose))
+                self.Drones.append(Drone(x[0], x[-1], x, self.harvest, self.verbose))
 
     def operate(self):
         """
-        Tells bee class to scan all of the given ranges with multi-threading and found targets are enumerated
+        Tells drone class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
         printer("! ! ! DEPLOYING SWARM ! ! !", warn=True)
         with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.threads)) as executor:
-            executor.map(Bee.is_alive, self.Bees)
+            executor.map(Drone.is_alive, self.Drones)
 
-        live_bees = []
-        for i in self.Bees:
+        live_drones = []
+        for i in self.Drones:
             if i.get_status():
-                live_bees.append(i)
+                live_drones.append(i)
 
-        self.Bees = live_bees
+        self.Drones = live_drones
 
     def report(self):
         """
-        Collects the results from the bees and prints them to CLI and files
+        Collects the results from the drones and prints them to CLI and files
         """
-        printer("Hive Completed. Number of successful bees: " + str(len(self.Bees)), event=True)
+        printer("Hive Completed. Number of successful drones: " + str(len(self.Drones)), event=True)
         out_csv = ""
         out_subs = ""
-        for i in self.Bees:
+        for i in self.Drones:
             printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]), event=True)
             out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
@@ -269,6 +269,7 @@ class Hive:
         df = pd.read_csv(file_str, sep=";")
         df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
+        df.set_index("IP", inplace=True)
         df.to_csv(self.wd + "/hive-output.csv")
 
         with open(self.wd + "/subs.txt", "w") as text_file:
@@ -277,13 +278,13 @@ class Hive:
         printer("Hive has completed. Have a nice day :)", end=True)
 
 
-class Bee:
+class Drone:
     """
-    Bees are given an IP range to scan and then harvest IP's if their range has an alive IP address inside
+    Drones are given an IP range to scan and then harvest IP's if their range has an alive IP address inside
     """
 
     def __init__(self, ip_start, ip_end, ip_list, harvest=False, verbose=True):
-        self.name = "Bee-" + str(ip_start) + "-" + str(ip_end)
+        self.name = "Drone-" + str(ip_start) + "-" + str(ip_end)
         self.ipRange = (ip_start, ip_end)
         self.ipList = ip_list
         self.live = False
@@ -293,44 +294,44 @@ class Bee:
 
     def get_status(self):
         """
-        Bee reports if its range is alive
+        Drone reports if its range is alive
         :return: bool
         """
         return self.live
 
     def get_range(self):
         """
-        Bee reports its assigned IP range
+        Drone reports its assigned IP range
         :return: tuple
         """
         return self.ipRange
 
     def get_harvest(self):
         """
-        Bee returns results of enumeration
+        Drone returns results of enumeration
         :return: string
         """
         return self.enumResults
 
     def is_alive(self):
         """
-        Tells if the Bee's assigned IP range has alive IP's inside
+        Tells if the Drone's assigned IP range has alive IP's inside
         """
         out = os.popen(
             'fping -a -i 2 -r 4 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
         if out == "":
             if self.verbose:
-                printer("No buzz in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
+                printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
-            printer("A bee found some flowers in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
+            printer("A drone discovered... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
             self.live = True
             if self.harvest:
                 self._harvest()
 
     def _harvest(self):
         """
-        Bee starts enumeration on it's range
+        Drone starts enumeration on it's range
         """
         printer("Starting Nmap for " + self.name, event=True)
         out = os.popen(

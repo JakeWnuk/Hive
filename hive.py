@@ -4,7 +4,10 @@ import concurrent.futures
 import os
 import re
 import time
+from io import StringIO
 from ipaddress import ip_address
+
+import pandas as pd
 
 
 # author Jake Wnuk
@@ -135,7 +138,12 @@ class Hive:
             exit()
 
         if ip_range != "":
-            self.subnet_list = ip_range
+            # if range last octet is not 0
+            if int(ip_range[0][0][-1]) == 0:
+                self.subnet_list = ip_range
+            else:
+                printer("For the range function the last octet must be a 0", error=True)
+                exit()
         else:
             self.subnet_list = [
                 ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.31.255.255")]
@@ -252,16 +260,20 @@ class Hive:
             out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
+        # creating result csv
         string_match = '"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
         str1 = string_match
         out_csv = out_csv.replace(str1, "")
         out_csv = string_match + '\n' + out_csv
+        file_str = StringIO(out_csv)
+        df = pd.read_csv(file_str, sep=";")
+        df.dropna(subset=["PORT"], inplace=True)
+        df.drop(columns=["FQDN"], inplace=True)
+        df.to_excel(self.wd + "/hive-output.xlsx")
 
         with open(self.wd + "/subs.txt", "w") as text_file:
             print(f"Found Subs: \n{out_subs}", file=text_file)
 
-        with open(self.wd + "/hive-output.txt", "w") as text_file:
-            print(out_csv, file=text_file)
         printer("Hive has completed. Have a nice day :)", end=True)
 
 

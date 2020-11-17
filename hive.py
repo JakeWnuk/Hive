@@ -335,7 +335,7 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         out = os.popen(
-            'nmap -n -Pn -sV -p 80,443,22,21,23 ' + str(
+            'nmap -n -Pn -sV -sSU -p 161,80,443,22,21,23 ' + str(
                 self.ipRange[0]) + "/24 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = out

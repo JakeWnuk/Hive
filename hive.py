@@ -317,12 +317,18 @@ class Drone:
         """
         Tells if the Drone's assigned IP range has alive IP's inside
         """
-        out = os.popen(
-            'fping -a -i 2 -r 4 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
-        if out == "":
-            if self.verbose:
-                printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
+        # try scanning start of range
+        f_out = os.popen(
+            'fping -a -i 1 -r 4 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipList[5]) + ' 2> /dev/null').read()
+
+        # then the end
+        if f_out == "":
+            e_out = os.popen(
+                'fping -a -i 1 -r 4 -g ' + str(self.ipList[-6]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
+            if e_out == "":
+                if self.verbose:
+                    printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
             printer("A drone discovered... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
             self.live = True
@@ -335,8 +341,9 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         out = os.popen(
-            'nmap -n -Pn -sV -sSU -p 161,80,443,22,21,23 ' + str(
-                self.ipRange[0]) + "/24 2>/dev/null | nmaptocsv 2>/dev/null").read()
+            'nmap -n -T4 -Pn -sV -sSU -p 161,80,443,22,21,23 ' +
+            str(self.ipRange[0]) +
+            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = out
 

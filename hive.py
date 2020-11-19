@@ -146,7 +146,7 @@ class Hive:
                 exit()
         else:
             self.subnet_list = [
-                ("192.168.0.0", "192.168.255.255"), ("10.0.0.0", "10.255.255.255"), ("172.16.0.0", "172.31.255.255")]
+                ("192.168.0.0", "192.168.255.255"), ("172.16.0.0", "172.31.255.255"), ("10.0.0.0", "10.255.255.255")]
 
         try:
             asyncio.run(self._gen_drones())
@@ -319,16 +319,13 @@ class Drone:
         """
 
         # try scanning start of range
-        f_out = os.popen(
-            'fping -a -i 1 -r 4 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipList[5]) + ' 2> /dev/null').read()
+        out = os.popen(
+            'fping -a -i 1 -r 2 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
         # then the end
-        if f_out == "":
-            e_out = os.popen(
-                'fping -a -i 1 -r 4 -g ' + str(self.ipList[-6]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
-            if e_out == "":
-                if self.verbose:
-                    printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
+        if out == "":
+            if self.verbose:
+                printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
             printer("A drone discovered... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
             self.live = True
@@ -360,8 +357,8 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
-    parser.add_argument("-th", "--threads", action="store", default=60,
-                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 60.")
+    parser.add_argument("-th", "--threads", action="store", default=100,
+                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 100.")
     args = parser.parse_args()
 
     # confirm top directory exists; if not, populate it
@@ -382,3 +379,4 @@ if __name__ == '__main__':
 
     myHive.operate()
     myHive.report()
+

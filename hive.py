@@ -173,11 +173,11 @@ class Hive:
                 "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" + self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --resolve-all",
+                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -Pn --top-ports 1000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --resolve-all",
+                "nmap -sU -T4 -Pn --top-ports 1000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 do_print=self.verbose)
         )
 
@@ -205,7 +205,7 @@ class Hive:
 
         # kick off targeted NSE script
         await run(
-            "nmap -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target + ".txt " + self.ip_target,
+            "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m" + self.ip_target,
             do_print=self.verbose)
 
         # check results

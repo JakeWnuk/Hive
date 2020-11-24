@@ -231,7 +231,7 @@ class Hive:
         for i in ip_ranges:
             split_ip_ranges = chunk_list(i, 256)
             for x in split_ip_ranges:
-                self.Drones.append(Drone(x[0], x[-1], x, self.harvest, self.verbose))
+                self.Drones.append(Drone(x[0], x[-1], x, self.wd, self.harvest, self.verbose))
 
     def operate(self):
         """
@@ -257,7 +257,8 @@ class Hive:
         out_subs = ""
         for i in self.Drones:
             printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]), event=True)
-            out_csv += str(i.get_harvest())
+            out_csv += str(i.get_harvest()[0])
+            out_csv += str(i.get_harvest()[1])
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
         # creating result csv
@@ -283,7 +284,7 @@ class Drone:
     Drones are given an IP range to scan and then harvest IP's if their range has an alive IP address inside
     """
 
-    def __init__(self, ip_start, ip_end, ip_list, harvest=False, verbose=True):
+    def __init__(self, ip_start, ip_end, ip_list, work_dir, harvest=False, verbose=True):
         self.name = "Drone-" + str(ip_start) + "-" + str(ip_end)
         self.ipRange = (ip_start, ip_end)
         self.ipList = ip_list
@@ -291,6 +292,7 @@ class Drone:
         self.harvest = harvest
         self.verbose = verbose
         self.enumResults = ""
+        self.wd = work_dir
 
     def get_status(self):
         """
@@ -311,6 +313,7 @@ class Drone:
         Drone returns results of enumeration
         :return: string
         """
+        print(self.enumResults, type(self.enumResults))
         return self.enumResults
 
     def is_alive(self):
@@ -337,12 +340,16 @@ class Drone:
         Drone starts enumeration on it's range
         """
         printer("Starting Nmap for " + self.name, event=True)
-        out = os.popen(
-            'nmap -n -T4 -Pn -sV -sSU -p 161,80,443,22,21,23 ' +
+        su_out = os.popen(
+            'nmap -n -T4 -Pn -sV -sU -p 161 ' +
             str(self.ipRange[0]) +
-            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m 2>/dev/null | nmaptocsv 2>/dev/null").read()
+            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
+        ss_out = os.popen(
+            'nmap -n -T4 -Pn -sV -sS -p 80,443,22,21,23 ' +
+            str(self.ipRange[0]) +
+            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-ss-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)
-        self.enumResults = out
+        self.enumResults = (su_out, ss_out)
 
 
 if __name__ == '__main__':
@@ -352,8 +359,8 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
-    group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
-                       help="Enter an IP range instead of predefined private range.")
+    #group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
+    #                   help="Enter an IP range instead of predefined private range.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
@@ -366,6 +373,7 @@ if __name__ == '__main__':
     if not os.path.exists(wd):
         os.makedirs(wd, exist_ok=True)
         os.makedirs(os.path.join(wd, "target"), exist_ok=True)
+        os.makedirs(os.path.join(wd, "scans"), exist_ok=True)
 
     # kick off
     if args.target:
@@ -379,4 +387,3 @@ if __name__ == '__main__':
 
     myHive.operate()
     myHive.report()
-

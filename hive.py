@@ -313,7 +313,6 @@ class Drone:
         Drone returns results of enumeration
         :return: string
         """
-        print(self.enumResults, type(self.enumResults))
         return self.enumResults
 
     def is_alive(self):

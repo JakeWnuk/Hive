@@ -138,11 +138,11 @@ class Hive:
             exit()
 
         if ip_range != "":
-            # if range last octet is not 0
-            if int(ip_range[0][0][-1]) == 0:
+            # check last octet for ranges
+            if int(ip_range[0][0][-1]) == 0 and int(ip_range[0][1][-3:]) == 255:
                 self.subnet_list = ip_range
             else:
-                printer("For the range function the last octet must be a 0", error=True)
+                printer("Sorry Hive can only scan /24 ranges currently", error=True)
                 exit()
         else:
             self.subnet_list = [
@@ -341,7 +341,7 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         su_out = os.popen(
-            'nmap -n -T4 -Pn -sV -sU -p 161 ' +
+            'nmap -n -T4 -sV -sU -p 161 ' +
             str(self.ipRange[0]) +
             "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         ss_out = os.popen(
@@ -359,8 +359,8 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
-    #group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
-    #                   help="Enter an IP range instead of predefined private range.")
+    group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
+                       help="Enter an IP range instead of predefined private range.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")

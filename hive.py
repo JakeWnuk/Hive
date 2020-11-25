@@ -114,7 +114,7 @@ class Hive:
     Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=50):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=80):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -363,8 +363,8 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
-    parser.add_argument("-th", "--threads", action="store", default=100,
-                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
+    parser.add_argument("-th", "--threads", action="store", default=80,
+                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 80.")
     args = parser.parse_args()
 
     # confirm top directory exists; if not, populate it

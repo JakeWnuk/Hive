@@ -116,7 +116,7 @@ class Hive:
     Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=80):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=50):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -342,7 +342,7 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         su_out = os.popen(
-            'nmap -n -T4 -sV -sU -p 161 --top-ports 10 ' +
+            'nmap -n -T4 -sV -sU --top-ports 10 ' +
             str(self.ipRange[0]) +
             "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         ss_out = os.popen(
@@ -365,8 +365,8 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
-    parser.add_argument("-th", "--threads", action="store", default=80,
-                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 80.")
+    parser.add_argument("-th", "--threads", action="store", default=50,
+                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
     args = parser.parse_args()
 
     # confirm top directory exists; if not, populate it

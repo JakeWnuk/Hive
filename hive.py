@@ -175,11 +175,11 @@ class Hive:
                 "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" + self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                "nmap -sS -T4 -Pn --top-ports 3400 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 -Pn --top-ports 1000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                "nmap -sU -T4 -Pn --top-ports 1500 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 do_print=self.verbose)
         )
 
@@ -324,14 +324,14 @@ class Drone:
 
         # try scanning start of range
         out = os.popen(
-            'fping -a -i 1 -r 2 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
+            'fping -a -i 1 -r 1 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
         # then the end
         if out == "":
             if self.verbose:
-                printer("Nothing in... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
+                printer("Nothing in " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
-            printer("A drone discovered... " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
+            printer("A drone discovered " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
             self.live = True
             if self.harvest:
                 self._harvest()
@@ -342,11 +342,11 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         su_out = os.popen(
-            'nmap -n -T4 -sV -sU --top-ports 10 ' +
+            'nmap -n -T4 -sV -sU -p 161 --top-ports 10 ' +
             str(self.ipRange[0]) +
             "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         ss_out = os.popen(
-            'nmap -n -T4 -Pn -sV -sS --top-ports 50 ' +
+            'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
             "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-ss-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         printer("Nmap finished for " + self.name, event=True)

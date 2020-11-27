@@ -1,4 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+
+#
+#    Network reconnaissance tool for endpoint enumeration.
+#    Copyright (C) 2020 Jake Wnuk
+#
+#    This program can be redistributed and/or modified under the terms of the
+#    GNU General Public License, either version 3 of the License, or (at your
+#    option) any later version.
+#
 
 import argparse
 import asyncio
@@ -11,8 +20,6 @@ from ipaddress import ip_address
 
 import pandas as pd
 
-
-# author Jake Wnuk
 
 async def gen_ip_range(start, end):
     """
@@ -63,9 +70,9 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
 
     if intro:
         print(
-            f'{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
+            f'{colors.OKBLUE}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
     elif end:
-        print(f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
+        print(f'{colors.BLINK}{colors.OKBLUE}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
@@ -160,23 +167,30 @@ class Hive:
         printer("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
         stdout = await asyncio.gather(
             run(
-                "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target + ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" + self.ip_target + ".txt",
+                "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target +
+                ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" +
+                self.ip_target + ".txt",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "host " + self.ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee " + self.wd + "/target/ipv6-" + self.ip_target + ".txt",
+                "host " + self.ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee " + self.wd +
+                "/target/ipv6-" + self.ip_target + ".txt",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "whois " + self.ip_target + " | tee " + self.wd + "/target/whois-" + self.ip_target + ".txt | tr -cd '\11\12\15\40-\176'",
+                "whois " + self.ip_target + " | tee " + self.wd + "/target/whois-" + self.ip_target +
+                ".txt | tr -cd '\11\12\15\40-\176'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" + self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
+                "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" +
+                self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -T4 -Pn --top-ports 3400 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                "nmap -sS -T4 -Pn --top-ports 3400 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 -Pn --top-ports 1500 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                "nmap -sU -T4 -Pn --top-ports 1500 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target +
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 do_print=self.verbose)
         )
 
@@ -192,19 +206,22 @@ class Hive:
 
         # read the nmap results for a port list
         ports = await run(
-            "cat " + self.wd + "/target/basic-nmap-s*-" + self.ip_target + ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd + "/target/ports-" + self.ip_target + ".txt",
+            "cat " + self.wd + "/target/basic-nmap-s*-" + self.ip_target +
+            ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
+            "/target/ports-" + self.ip_target + ".txt",
             return_stdout=True, do_print=self.verbose)
 
         # report findings
-        printer("Found IPv4 Addresses: " + str(ipv4), warn=True)
-        printer("Found IPv6 Addresses: " + str(ipv6), warn=True)
+        printer("Found IPv4 Addresses: " + str(ipv4), event=True)
+        printer("Found IPv6 Addresses: " + str(ipv6), event=True)
         ports = ports.split('\n')
-        printer("Found Ports: " + str(ports), warn=True)
+        printer("Found Ports: " + str(ports), event=True)
         port_str = ','.join([str(elem) for elem in ports])
 
         # kick off targeted NSE script
         await run(
-            "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m" + self.ip_target,
+            "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
+            self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m" + self.ip_target,
             do_print=self.verbose)
 
         # check results
@@ -255,7 +272,7 @@ class Hive:
         out_csv = ""
         out_subs = ""
         for i in self.Drones:
-            printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]), event=True)
+            printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]))
             out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
@@ -327,7 +344,7 @@ class Drone:
             if self.verbose:
                 printer("Nothing in " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
-            printer("A drone discovered " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), warn=True)
+            printer("A drone discovered " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), event=True)
             self.live = True
             if self.harvest:
                 self._harvest()
@@ -336,14 +353,16 @@ class Drone:
         """
         Drone starts enumeration on it's range
         """
-        printer("Starting Nmap for " + self.name, event=True)
+        printer("Starting Nmap for " + self.name)
         std_out = os.popen(
             '(nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
-            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-su-' + self.name + '.txt 2>/dev/null &' +
+            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-su-' +
+            self.name + '.txt 2>/dev/null &' +
             'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
-            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-ss-' + self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
+            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-ss-' +
+            self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
 
         printer("Nmap finished for " + self.name, event=True)
         self.enumResults = std_out

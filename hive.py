@@ -342,7 +342,7 @@ class Drone:
         """
         printer("Starting Nmap for " + self.name, event=True)
         su_out = os.popen(
-            'nmap -n -T4 -sV -sU --top-ports 10 ' +
+            'nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
             "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
         ss_out = os.popen(

@@ -21,7 +21,7 @@ async def gen_ip_range(start, end):
     :param end:  end IPv4 address
     :return: list of ips
     """
-    printer("Generating drones for " + str(start) + " - " + str(end), event=True)
+    printer("Generating drones for " + str(start) + "-" + str(end), event=True)
     start_int = int(ip_address(start).packed.hex(), 16)
     end_int = int(ip_address(end).packed.hex(), 16)
     return [ip_address(ip).exploded for ip in range(start_int, end_int)]
@@ -57,16 +57,13 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
         FAIL = '\033[91m'
         ENDC = '\033[0m'
         BOLD = '\033[1m'
-        UNDERLINE = '\033[4m'
         BGBLACK = '\033[40m'
-        CYAN = '\033[36m'
-        INVERT = '\033[7m'
 
     tm = time.strftime("%H:%M:%S")
 
     if intro:
         print(
-            f'{colors.INVERT}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
+            f'{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
     elif end:
         print(f'{colors.BLINK}{colors.WARNING}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg} [ # ]{colors.ENDC}')
     elif warn:
@@ -259,8 +256,7 @@ class Hive:
         out_subs = ""
         for i in self.Drones:
             printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]), event=True)
-            out_csv += str(i.get_harvest()[0])
-            out_csv += str(i.get_harvest()[1])
+            out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
         # creating result csv
@@ -341,16 +337,16 @@ class Drone:
         Drone starts enumeration on it's range
         """
         printer("Starting Nmap for " + self.name, event=True)
-        su_out = os.popen(
-            'nmap -n -T4 -sV -sU --top-ports 20 ' +
+        std_out = os.popen(
+            '(nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
-            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-su-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
-        ss_out = os.popen(
+            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-su-' + self.name + '.txt 2>/dev/null &' +
             'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
-            "/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN " + self.wd + "/scans/nmap-ss-" + self.name + ".txt 2>/dev/null | nmaptocsv 2>/dev/null").read()
+            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-ss-' + self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
+
         printer("Nmap finished for " + self.name, event=True)
-        self.enumResults = (su_out, ss_out)
+        self.enumResults = std_out
 
 
 if __name__ == '__main__':

@@ -10,9 +10,9 @@ Hive is a simple network enumeration tool designed for enumerating private range
 
 ## Demo
 
-<h1 align="center">
-<img src="https://raw.githubusercontent.com/JakeWnuk/Hive/master/static/demo.png" alt="" height=443 width=666px>
- </h1>
+![Image](../master/static/demo.png?raw=true)
+
+
 Hive works by first generating IP ranges for host discovery then divides the generated ranges into blocks of /24 addresses. Hive takes those ranges and assigns them to 'Drones,' which then sends ICMP packets to all hosts within a range. If any hosts are found within the range, the responsible Drone begins asynchronous enumeration. All drones act concurrently set to the maximum number of workers specified.
 
 ## Usage

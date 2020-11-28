@@ -22,8 +22,8 @@ hive.py -h
 
 This will display help for the tool. Here are all the options it supports.
 
-|Flag           |Description  |Example|
-|-----------------------|-------------------------------------------------------|-------------------------------|
+|Flag                   |Description  |Example|
+|-----------------------------|-------------------------------------------------------|-------------------------------|
 |Default        |Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory.    |hive.py|
 |-v / --verbosity        |Increases the output verbosity.    |hive.py -v|
 |-t / --target |Changes the mode to single target enumeration.               |hive.py -t 127.0.0.1|

@@ -10,9 +10,9 @@ Hive is a simple network enumeration tool designed for enumerating private range
 
 ## Demo
 
-<h1 align="center">
-<img src="https://raw.githubusercontent.com/JakeWnuk/Hive/master/static/demo.png" alt="" height=443 width=666px>
- </h1>
+![Image](../master/static/demo.png?raw=true)
+
+
 Hive works by first generating IP ranges for host discovery then divides the generated ranges into blocks of /24 addresses. Hive takes those ranges and assigns them to 'Drones,' which then sends ICMP packets to all hosts within a range. If any hosts are found within the range, the responsible Drone begins asynchronous enumeration. All drones act concurrently set to the maximum number of workers specified.
 
 ## Usage
@@ -25,7 +25,7 @@ This will display help for the tool. Here are all the options it supports.
 
 |Flag |  Full Flag Option              | Description  |Example|
 |-----|-------------------------|-------------------------------------------------------|-------------------------------|
-|None | No flags  | Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory. |`hive.py`|
+|None | No flags set  | Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory. |`hive.py`|
 |-v | --verbosity |Increases the output verbosity. |`hive.py -v`|
 |-t | --target  |Changes the mode to single target enumeration. |`hive.py -t 127.0.0.1`|
 |-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|

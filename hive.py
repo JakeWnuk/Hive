@@ -115,7 +115,7 @@ class Hive:
     Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", threads=50):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", workers=50):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -129,7 +129,7 @@ class Hive:
         self.ip_target = ip_target
         self.wd = work_dir
         self.Drones = []
-        self.threads = threads
+        self.workers = workers
 
         printer('''
         ██╗  ██╗██╗██╗   ██╗███████╗
@@ -139,7 +139,7 @@ class Hive:
         ██║  ██║██║ ╚████╔╝ ███████╗
         ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
         ''', intro=True)
-        printer("NUMBER OF CURRENT WORKERS: " + str(threads), warn=True)
+        printer("NUMBER OF CURRENT WORKERS: " + str(workers), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())
@@ -256,7 +256,7 @@ class Hive:
         Tells drone class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
         printer("! ! ! DEPLOYING SWARM ! ! !", warn=True)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.threads)) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.workers)) as executor:
             executor.map(Drone.is_alive, self.Drones)
 
         live_drones = []
@@ -394,12 +394,12 @@ if __name__ == '__main__':
     # kick off
     if args.target:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd,
-                      threads=args.threads)
+                      workers=args.workers)
     elif args.range:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd,
-                      threads=args.threads)
+                      workers=args.workers)
     else:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, threads=args.threads)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.workers)
 
     myHive.operate()
     myHive.report()

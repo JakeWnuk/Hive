@@ -31,7 +31,7 @@ This will display help for the tool. Here are all the options it supports.
 |-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|
 |-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
 |-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|
-|-th | --threads  |Changes the number of max workers in the thread pool.   |`hive.py -th 20`|
+|-w | --workers  |Changes the number of max workers in the thread pool.   |`hive.py -w 20`|
 
 ## Installation
 

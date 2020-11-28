@@ -38,7 +38,7 @@ This will display help for the tool. Here are all the options it supports.
 Download the repo.
 
 ```sh
-▶ git clone https://github.com/JakeWnuk/Hive.git
+▶ git clone https://github.com/JakeWnuk/Hive
 ```
 
 Install the dependencies.

@@ -1,12 +1,8 @@
 #!/usr/bin/python3
 
 #
-#    Network reconnaissance tool for endpoint enumeration.
-#    Author Jake Wnuk
-#
-#    This program can be redistributed and/or modified under the terms of the
-#    GNU General Public License, either version 3 of the License, or (at your
-#    option) any later version.
+#   Network reconnaissance tool for endpoint enumeration.
+#   Developers assume no liability and are not responsible for any misuse or damage.
 #
 
 import argparse
@@ -64,15 +60,14 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
         FAIL = '\033[91m'
         ENDC = '\033[0m'
         BOLD = '\033[1m'
-        BGBLACK = '\033[40m'
 
     tm = time.strftime("%H:%M:%S")
 
     if intro:
         print(
-            f'{colors.OKBLUE}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
+            f'{colors.OKBLUE}{colors.BOLD} {msg}{colors.ENDC}')
     elif end:
-        print(f'{colors.BLINK}{colors.OKBLUE}{colors.BGBLACK}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
+        print(f'{colors.BLINK}{colors.OKBLUE}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
@@ -136,7 +131,14 @@ class Hive:
         self.Drones = []
         self.threads = threads
 
-        printer("Welcome to Hive!", intro=True)
+        printer('''
+        ██╗  ██╗██╗██╗   ██╗███████╗
+        ██║  ██║██║██║   ██║██╔════╝
+        ███████║██║██║   ██║█████╗  
+        ██╔══██║██║╚██╗ ██╔╝██╔══╝  
+        ██║  ██║██║ ╚████╔╝ ███████╗
+        ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
+        ''', intro=True)
         printer("NUMBER OF CURRENT THREADS: " + str(threads), warn=True)
 
         if ip_target != "":
@@ -268,7 +270,7 @@ class Hive:
         """
         Collects the results from the drones and prints them to CLI and files
         """
-        printer("Hive Completed. Number of successful drones: " + str(len(self.Drones)), warn=True)
+        printer("Number of successful drones: " + str(len(self.Drones)), warn=True)
         out_csv = ""
         out_subs = ""
         for i in self.Drones:
@@ -276,7 +278,7 @@ class Hive:
             out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
-        # creating result csv
+        # aggregate results
         string_match = '"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
         str1 = string_match
         out_csv = out_csv.replace(str1, "")
@@ -291,7 +293,7 @@ class Hive:
         with open(self.wd + "/subs.txt", "w") as text_file:
             print(f"Found Subs: \n{out_subs}", file=text_file)
 
-        printer("Hive has completed. Have a nice day :)", end=True)
+        printer("Hive has completed. Have a nice day.", end=True)
 
 
 class Drone:
@@ -335,11 +337,9 @@ class Drone:
         Tells if the Drone's assigned IP range has alive IP's inside
         """
 
-        # try scanning start of range
         out = os.popen(
             'fping -a -i 1 -r 1 -g ' + str(self.ipRange[0]) + ' ' + str(self.ipRange[1]) + ' 2> /dev/null').read()
 
-        # then the end
         if out == "":
             if self.verbose:
                 printer("Nothing in " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
     group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
-                       help="Enter an IP range instead of predefined private range.")
+                       help="Enter an IP range instead of predefined private range. Separate with '-'.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")

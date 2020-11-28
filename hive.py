@@ -139,7 +139,7 @@ class Hive:
         ██║  ██║██║ ╚████╔╝ ███████╗
         ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
         ''', intro=True)
-        printer("NUMBER OF CURRENT THREADS: " + str(threads), warn=True)
+        printer("NUMBER OF CURRENT WORKERS: " + str(threads), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())
@@ -150,7 +150,7 @@ class Hive:
             if int(ip_range[0][0][-1]) == 0 and int(ip_range[0][1][-3:]) == 255:
                 self.subnet_list = ip_range
             else:
-                printer("Sorry Hive can only scan /24 ranges currently", error=True)
+                printer("Sorry Hive can only scan ranges with the 4th octect being 0 or 255", error=True)
                 exit()
         else:
             self.subnet_list = [

@@ -237,7 +237,7 @@ class Hive:
         except ValueError:
             printer("Error when reviewing results!", error=True)
 
-        printer("Hive has completed. Have a nice day :)", end=True)
+        printer("Hive has completed. Have a nice day.", end=True)
 
     async def _gen_drones(self):
         """
@@ -380,7 +380,7 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
-    parser.add_argument("-th", "--threads", action="store", default=50,
+    parser.add_argument("-w", "--workers", action="store", default=50,
                         help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
     args = parser.parse_args()
 

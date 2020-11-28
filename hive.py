@@ -2,7 +2,7 @@
 
 #
 #    Network reconnaissance tool for endpoint enumeration.
-#    Copyright (C) 2020 Jake Wnuk
+#    Author Jake Wnuk
 #
 #    This program can be redistributed and/or modified under the terms of the
 #    GNU General Public License, either version 3 of the License, or (at your
@@ -268,7 +268,7 @@ class Hive:
         """
         Collects the results from the drones and prints them to CLI and files
         """
-        printer("Hive Completed. Number of successful drones: " + str(len(self.Drones)), event=True)
+        printer("Hive Completed. Number of successful drones: " + str(len(self.Drones)), warn=True)
         out_csv = ""
         out_subs = ""
         for i in self.Drones:

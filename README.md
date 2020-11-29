@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-_red.svg)](https://opensource.org/licenses/MIT)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/JakeWnuk/Hive/issues)
 
-Hive is a simple network enumeration tool designed for enumerating private ranges and single targets asynchronously and concurrently.
+Hive is a lightweight network enumeration tool designed for enumerating private ranges and single targets asynchronously and concurrently.
 
 ## Demo
 

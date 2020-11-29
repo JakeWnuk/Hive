@@ -223,7 +223,7 @@ class Hive:
         # kick off targeted NSE script
         await run(
             "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
-            self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m" + self.ip_target,
+            self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m " + self.ip_target,
             do_print=self.verbose)
 
         # check results

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.9
 
 #
 #   Network reconnaissance tool for endpoint enumeration.
@@ -255,9 +255,13 @@ class Hive:
         """
         Tells drone class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
-        printer("! ! ! DEPLOYING SWARM ! ! !", warn=True)
+        printer("Deploying Swarm!", warn=True)
         with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.workers)) as executor:
-            executor.map(Drone.is_alive, self.Drones)
+            try:
+                executor.map(Drone.is_alive, self.Drones)
+            except KeyboardInterrupt:
+                printer("Stopping Hive!", warn=True)
+                executor.shutdown(wait=False,cancel_futures=True)
 
         live_drones = []
         for i in self.Drones:

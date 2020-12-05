@@ -169,15 +169,6 @@ class Hive:
         printer("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
         stdout = await asyncio.gather(
             run(
-                "nmap -sU -T4 -Pn --top-ports 15000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target +
-                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
-                do_print=self.verbose),
-            run(
-                "nmap -sS -T4 -Pn --top-ports 5000 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
-                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
-                return_stdout=True,
-                do_print=self.verbose),
-            run(
                 "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target +
                 ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" +
                 self.ip_target + ".txt",
@@ -193,7 +184,16 @@ class Hive:
             run(
                 "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" +
                 self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
-                return_stdout=True, do_print=self.verbose)
+                return_stdout=True, do_print=self.verbose),
+            run(
+                "nmap -sS -T4 -Pn --top-ports 5000 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                return_stdout=True,
+                do_print=self.verbose),
+            run(
+                "nmap -sU -T4 -Pn --top-ports 15000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target +
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                do_print=self.verbose)
         )
 
         # get results of host and dig to make sure they align for ipv4

@@ -30,6 +30,15 @@ async def gen_ip_range(start, end):
     return [ip_address(ip).exploded for ip in range(start_int, end_int)]
 
 
+def dep_check():
+    if not os.path.exists('/usr/bin/fping'):
+        printer("Missing dependency fping!", error=True)
+        exit()
+    elif not os.path.exists('/usr/bin/nmap'):
+        printer("Missing dependency nmap!", error=True)
+        exit()
+
+
 def chunk_list(lst, n):
     """
     Splits a list into n parts
@@ -261,7 +270,7 @@ class Hive:
                 executor.map(Drone.is_alive, self.Drones)
             except KeyboardInterrupt:
                 printer("Stopping Hive!", warn=True)
-                executor.shutdown(wait=False,cancel_futures=True)
+                executor.shutdown(wait=False, cancel_futures=True)
 
         live_drones = []
         for i in self.Drones:
@@ -387,6 +396,9 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--workers", action="store", default=50,
                         help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
     args = parser.parse_args()
+
+    # check for dependencies
+    dep_check()
 
     # confirm top directory exists; if not, populate it
     wd = os.path.join(args.output, "hive-results")

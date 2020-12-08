@@ -195,12 +195,12 @@ class Hive:
                 self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
+                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/nmap-ss-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 -Pn --top-ports 15000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target +
+                "nmap -sU -T4 --top-ports 2500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
@@ -217,7 +217,7 @@ class Hive:
 
         # read the nmap results for a port list
         ports = await run(
-            "cat " + self.wd + "/target/basic-nmap-s*-" + self.ip_target +
+            "cat " + self.wd + "/target/nmap-s*-" + self.ip_target +
             ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
             "/target/ports-" + self.ip_target + ".txt",
             return_stdout=True, do_print=self.verbose)

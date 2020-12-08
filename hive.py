@@ -298,7 +298,7 @@ class Hive:
         out_csv = string_match + '\n' + out_csv
         file_str = StringIO(out_csv)
         df = pd.read_csv(file_str, sep=";")
-        df.dropna(subset=["PORT"], inplace=True)
+        # df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
         df.set_index("IP", inplace=True)
         df.to_csv(self.wd + "/hive-output.csv")

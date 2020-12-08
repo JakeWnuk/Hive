@@ -195,7 +195,7 @@ class Hive:
                 self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -T4 -Pn --top-ports 5000 -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
+                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
                 return_stdout=True,
                 do_print=self.verbose),

@@ -196,12 +196,12 @@ class Hive:
                 return_stdout=True, do_print=self.verbose),
             run(
                 "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/basic-nmap-ss-" + self.ip_target +
-                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
                 "nmap -sU -T4 -Pn --top-ports 15000 -oN " + self.wd + "/target/basic-nmap-su-" + self.ip_target +
-                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 15m  --script-timeout 10m",
+                ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
 
@@ -232,7 +232,7 @@ class Hive:
         # kick off targeted NSE script
         await run(
             "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
-            self.ip_target + ".txt --max-retries 4 --host-timeout 15m  --script-timeout 10m " + self.ip_target,
+            self.ip_target + ".txt --max-retries 4 --host-timeout 90m  --script-timeout 90m " + self.ip_target,
             do_print=self.verbose)
 
         # check results
@@ -370,11 +370,11 @@ class Drone:
         std_out = os.popen(
             '(nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
-            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-su-' +
+            '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
             self.name + '.txt 2>/dev/null &' +
             'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
-            '/24 --max-retries 4 --host-timeout 15m  --script-timeout 10m -oN ' + self.wd + '/scans/nmap-ss-' +
+            '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
             self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
 
         printer("Nmap finished for " + self.name, event=True)

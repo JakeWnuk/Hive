@@ -9,6 +9,8 @@
 
 Hive is a lightweight network enumeration tool designed for enumerating private ranges and single targets asynchronously and concurrently.
 
+Developed and tested on Debian GNU distros.
+
 ## Demo
 
 ![Image](../master/static/demo.png?raw=true)
@@ -16,7 +18,9 @@ Hive is a lightweight network enumeration tool designed for enumerating private 
 
 Hive works by first generating IP ranges for host discovery then divides the generated ranges into blocks of /24 addresses. Hive takes those ranges and assigns them to 'Drones,' which then sends ICMP packets to all hosts within a range. If any hosts are found within the range, the responsible Drone begins asynchronous enumeration. All drones act concurrently set to the maximum number of workers specified. Output is aggregated into a single folder with the scans, found ranges, and a easy to read csv.
 
-Developed and tested on Debian GNU distros.
+![Image](../master/static/hive-target.png?raw=true)
+
+Hive also has the ability to perform single target enumeration using common commands for port scanning and DNS reconnaissance. This information will be stored in its own folder for easy access.
 
 ## Usage
 

@@ -234,11 +234,17 @@ class Hive:
             "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
             self.ip_target + ".txt --max-retries 4 --host-timeout 90m  --script-timeout 90m " + self.ip_target,
             do_print=self.verbose)
+        
+        # print targeted info
+        trgt = await run(
+             "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
+             ".txt | grep open | grep -v filtered", return_stdout=True)
+        printer("Port Information: \n" + str(trgt))
 
         # check results
         try:
             if dig_ips != host_ips:
-                printer("The dig and host command results do not align. Might be a LB.", warn=True)
+                printer("The dig and host command results do not align.", warn=True)
             if "No match for" in stdout[2]:
                 printer("No whois match found for given domain.", warn=True)
             if "0 hosts up" in stdout[4]:

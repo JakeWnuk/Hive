@@ -238,7 +238,7 @@ class Hive:
         # print targeted info
         trgt = await run(
              "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
-             ".txt | grep open | grep -v filtered", return_stdout=True)
+             ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
         printer("Port Information: \n" + str(trgt))
 
         # check results

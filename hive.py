@@ -472,7 +472,7 @@ class Drone:
             'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
-            self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
+            self.name + '.txt 2>/dev/null) | grep -iv "filtered" | nmaptocsv 2>/dev/null').read()
 
         message("Nmap finished for " + self.name, event=True)
         self.enumResults = std_out

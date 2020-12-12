@@ -145,7 +145,7 @@ def sleepy(minutes):
     """
     tm = time.strftime("%H:%M:%S")
     message('Sleeping until ' + str(
-        (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(minutes=minutes)).strftime("%H:%M:%S")), warn=True)
+        (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(minutes=int(minutes))).strftime("%H:%M:%S")), warn=True)
     time.sleep((int(minutes) * 60))
 
 

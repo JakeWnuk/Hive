@@ -75,7 +75,7 @@ def message(msg, intro=False, event=False, error=False, warn=False, end=False):
 
     if intro:
         print(
-            f'{colors.OKBLUE}{colors.BOLD} {msg}{colors.ENDC}')
+            f'{colors.OKBLUE}{colors.BOLD}{msg}{colors.ENDC}')
     elif end:
         print(f'{colors.OKBLUE}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
     elif warn:
@@ -211,14 +211,11 @@ class Hive:
         self.Drones = []
         self.workers = workers
 
-        message('''
-        ██╗  ██╗██╗██╗   ██╗███████╗
-        ██║  ██║██║██║   ██║██╔════╝
-        ███████║██║██║   ██║█████╗  
-        ██╔══██║██║╚██╗ ██╔╝██╔══╝  
-        ██║  ██║██║ ╚████╔╝ ███████╗
-        ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
-        ''', intro=True)
+        message('''       __ ___         
+      / // (_)  _____ 
+     / _  / / |/ / -_)
+    /_//_/_/|___/\__/  v1.0
+''', intro=True)
         message("NUMBER OF WORKERS: " + str(workers), warn=True)
 
         if ip_target != "":

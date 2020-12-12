@@ -394,6 +394,7 @@ class Hive:
         out_csv = string_match + '\n' + out_csv
         file_str = StringIO(out_csv)
         df = pd.read_csv(file_str, sep=";")
+        df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
         message("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
 

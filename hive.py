@@ -219,7 +219,7 @@ class Hive:
         ██║  ██║██║ ╚████╔╝ ███████╗
         ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
         ''', intro=True)
-        message("NUMBER OF CURRENT WORKERS: " + str(workers), warn=True)
+        message("NUMBER OF WORKERS: " + str(workers), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())

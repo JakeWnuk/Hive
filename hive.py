@@ -25,7 +25,7 @@ async def gen_ip_range(start, end):
     :param end:  end IPv4 address
     :return: list of ips
     """
-    printer("Generating drones for " + str(start) + "-" + str(end), event=True)
+    message("Generating drones for " + str(start) + "-" + str(end), event=True)
     start_int = int(ip_address(start).packed.hex(), 16)
     end_int = int(ip_address(end).packed.hex(), 16)
     return [ip_address(ip).exploded for ip in range(start_int, end_int)]
@@ -33,10 +33,10 @@ async def gen_ip_range(start, end):
 
 def dep_check():
     if not os.path.exists('/usr/bin/fping'):
-        printer("Missing dependency fping!", error=True)
+        message("Missing dependency fping!", error=True)
         exit()
     elif not os.path.exists('/usr/bin/nmap'):
-        printer("Missing dependency nmap!", error=True)
+        message("Missing dependency nmap!", error=True)
         exit()
 
 
@@ -50,7 +50,7 @@ def chunk_list(lst, n):
     return [lst[i:i + n] for i in range(0, len(lst), n)]
 
 
-def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
+def message(msg, intro=False, event=False, error=False, warn=False, end=False):
     """
     Prints formatted text to CLI
     :param end: ending message
@@ -81,7 +81,7 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
-        print(f'{colors.FAIL}[ ! ] [{tm}] {msg}{colors.ENDC}')
+        print(f'{colors.FAIL}[ ! ] [{tm}] {colors.ENDC}{msg}')
     elif event:
         print(f'{colors.OKGREEN}[ + ] [{tm}] {colors.ENDC}{msg}')
     else:
@@ -113,11 +113,81 @@ async def run(cmd, return_stdout=False, do_print=False):
 
     stdout, stderr = await proc.communicate()
     if proc.returncode == 0 and do_print:
-        printer(f"{cmd!r} exited with {proc.returncode}", event=True)
+        message(f"{cmd!r} exited with {proc.returncode}", event=True)
     elif do_print:
-        printer(f"{cmd!r} exited with {proc.returncode}", error=True)
+        message(f"{cmd!r} exited with {proc.returncode}", error=True)
     if return_stdout:
         return stdout.decode('ascii').rstrip()
+
+
+def sleepy(minutes):
+    tm = time.strftime("%H:%M:%S")
+    message('Sleeping until ' + str(
+        (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
+    time.sleep((int(minutes) * 60))
+
+
+def cycle(hive, sleep, itr):
+    """
+    Controls how many scan cycles to perform
+    :param hive: hive class
+    :param sleep: int of min to sleep
+    :param itr: number of times to scan
+    :return: none
+    """
+    try:
+        master_df = pd.DataFrame()
+        for i in range(int(itr)):
+            hive.operate()
+            df = hive.report()
+
+            if i == 0:
+                master_df = df
+                master_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+                # sleep for given minutes
+                sleepy(sleep)
+            else:
+                new_df = \
+                    master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
+                                    indicator=True).loc[
+                        lambda x: x['_merge'] == 'right_only']
+                new_df.drop(columns=['_merge'], inplace=True)
+                new_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+
+                rm_df = \
+                    master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
+                                    indicator=True).loc[
+                        lambda x: x['_merge'] == 'left_only']
+                rm_df.drop(columns=['_merge'], inplace=True)
+                rm_df['LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+
+                master_df = master_df.append(new_df)
+                master_df = master_df.merge(rm_df, how='left',
+                                            on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
+
+                new_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
+                rm_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
+
+                if not new_ips:
+                    pass
+                else:
+                    message('New hosts found: \n' + str(new_ips), event=True)
+
+                if not rm_ips:
+                    pass
+                else:
+                    message('Ghosted hosts: \n' + str(rm_ips), error=True)
+
+                # clear df
+                new_df = new_df.iloc[0:0]
+                rm_df = rm_df.iloc[0:0]
+
+                # sleep for given minutes
+                sleepy(sleep)
+
+            master_df.to_csv(wd + "/hive-output.csv")
+    except KeyboardInterrupt:
+        message("Stopping Hive!", warn=True)
 
 
 class Hive:
@@ -141,7 +211,7 @@ class Hive:
         self.Drones = []
         self.workers = workers
 
-        printer('''
+        message('''
         ██╗  ██╗██╗██╗   ██╗███████╗
         ██║  ██║██║██║   ██║██╔════╝
         ███████║██║██║   ██║█████╗  
@@ -149,7 +219,7 @@ class Hive:
         ██║  ██║██║ ╚████╔╝ ███████╗
         ╚═╝  ╚═╝╚═╝  ╚═══╝  ╚══════╝
         ''', intro=True)
-        printer("NUMBER OF CURRENT WORKERS: " + str(workers), warn=True)
+        message("NUMBER OF CURRENT WORKERS: " + str(workers), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())
@@ -160,7 +230,7 @@ class Hive:
             if int(ip_range[0][0][-1]) == 0 and int(ip_range[0][1][-3:]) == 255:
                 self.subnet_list = ip_range
             else:
-                printer("Sorry Hive can only scan ranges with the 4th octect being 0 or 255", error=True)
+                message("Sorry Hive can only scan ranges with the 4th octect being 0 or 255", error=True)
                 exit()
         else:
             self.subnet_list = [("192.168.0.0", "192.168.255.255"),
@@ -169,14 +239,14 @@ class Hive:
         try:
             asyncio.run(self._gen_drones())
         except ValueError:
-            printer("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
+            message("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
             exit()
 
     async def _target_enum(self):
         """
         Function used for single target enumeration
         """
-        printer("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
+        message("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
         stdout = await asyncio.gather(
             run(
                 "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target +
@@ -224,10 +294,10 @@ class Hive:
             return_stdout=True, do_print=self.verbose)
 
         # report findings
-        printer("Found IPv4 Addresses: " + str(ipv4), event=True)
-        printer("Found IPv6 Addresses: " + str(ipv6), event=True)
+        message("Found IPv4 Addresses: " + str(ipv4), event=True)
+        message("Found IPv6 Addresses: " + str(ipv6), event=True)
         ports = ports.split('\n')
-        printer("Found Ports: " + str(ports), event=True)
+        message("Found Ports: " + str(ports), event=True)
         port_str = ','.join([str(elem) for elem in ports])
 
         # kick off targeted NSE script
@@ -240,20 +310,20 @@ class Hive:
         trgt = await run(
             "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
             ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
-        printer("Port Information: \n" + str(trgt))
+        message("Port Information: \n" + str(trgt))
 
         # check results
         try:
             if dig_ips != host_ips:
-                printer("The dig and host command results do not align.", warn=True)
+                message("The dig and host command results do not align.", warn=True)
             if "No match for" in stdout[2]:
-                printer("No whois match found for given domain.", warn=True)
+                message("No whois match found for given domain.", warn=True)
             if "0 hosts up" in stdout[4]:
-                printer("Nmap failed to resolve a target for the given domain.", error=True)
+                message("Nmap failed to resolve a target for the given domain.", error=True)
         except ValueError:
-            printer("Error when reviewing results!", error=True)
+            message("Error when reviewing results!", error=True)
 
-        printer("Hive has completed. Have a nice day.", end=True)
+        message("Hive has completed. Have a nice day.", end=True)
 
     async def _gen_drones(self):
         """
@@ -271,12 +341,12 @@ class Hive:
         """
         Tells drone class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
-        printer("Deploying Swarm!", warn=True)
+        message("Deploying Swarm!", warn=True)
         with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.workers)) as executor:
             try:
                 executor.map(Drone.is_alive, self.Drones)
             except KeyboardInterrupt:
-                printer("Stopping Hive!", warn=True)
+                message("Stopping Hive!", warn=True)
                 executor.shutdown(wait=False, cancel_futures=True)
 
         live_drones = []
@@ -290,11 +360,11 @@ class Hive:
         """
         Collects the results from the drones and prints them to CLI and files
         """
-        printer("Number of successful drones: " + str(len(self.Drones)), warn=True)
+        message("Number of successful drones: " + str(len(self.Drones)), warn=True)
         out_csv = ""
         out_subs = ""
         for i in self.Drones:
-            printer(str(i.get_range()[0]) + "-" + str(i.get_range()[1]))
+            message(str(i.get_range()[0]) + "-" + str(i.get_range()[1]))
             out_csv += str(i.get_harvest())
             out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
@@ -307,14 +377,14 @@ class Hive:
         df = pd.read_csv(file_str, sep=";")
         df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
-        printer("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
+        message("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
 
         df.to_csv(self.wd + "/hive-output.csv")
 
         with open(self.wd + "/subs.txt", "w") as text_file:
             print(f"Found Subs: \n{out_subs}", file=text_file)
 
-        printer("Hive has completed. Have a nice day.", end=True)
+        message("Hive has completed. Have a nice day.", end=True)
 
         return df
 
@@ -365,9 +435,9 @@ class Drone:
 
         if out == "":
             if self.verbose:
-                printer("Nothing in " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
+                message("Nothing in " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]))
         else:
-            printer("A drone discovered " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), event=True)
+            message("A drone discovered " + str(self.ipRange[0]) + " to " + str(self.ipRange[1]), event=True)
             self.live = True
             if self.harvest:
                 self._harvest()
@@ -376,7 +446,7 @@ class Drone:
         """
         Drone starts enumeration on it's range
         """
-        printer("Starting Nmap for " + self.name)
+        message("Starting Nmap for " + self.name)
         std_out = os.popen(
             '(nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
@@ -387,65 +457,8 @@ class Drone:
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
             self.name + '.txt 2>/dev/null) | nmaptocsv 2>/dev/null').read()
 
-        printer("Nmap finished for " + self.name, event=True)
+        message("Nmap finished for " + self.name, event=True)
         self.enumResults = std_out
-
-
-def cycle(hive, sleep, itr):
-    """
-    Controls how many scan cycles to perform
-    :param hive: hive class
-    :param sleep: int of min to sleep
-    :param itr: number of times to scan
-    :return: none
-    """
-    tm = time.strftime("%H:%M:%S")
-
-    master_df = ""
-    for i in range(int(itr)):
-        hive.operate()
-        df = hive.report()
-
-        if i == 0:
-            master_df = df
-            master_df['FIRST SEEN'] = tm
-        else:
-            printer('Sleeping until ' + str(
-                (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
-            time.sleep((int(sleep) * 60))
-
-            new_df = \
-                master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
-                                indicator=True).loc[
-                    lambda x: x['_merge'] == 'right_only']
-            new_df.drop(columns=['_merge'], inplace=True)
-            new_df['FIRST SEEN'] = tm
-
-            rm_df = \
-                master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
-                                indicator=True).loc[
-                    lambda x: x['_merge'] == 'left_only']
-            rm_df.drop(columns=['_merge'], inplace=True)
-            rm_df['LAST SEEN'] = tm
-
-            master_df = master_df.append(new_df)
-            master_df = master_df.merge(rm_df, how='left',
-                                        on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
-
-            new_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
-            rm_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
-
-            if not new_ips:
-                pass
-            else:
-                printer('New hosts found: \n' + str(new_ips), event=True)
-
-            if not rm_ips:
-                pass
-            else:
-                printer('Ghosted hosts: \n' + str(rm_ips), error=True)
-
-    master_df.to_csv(wd + "/hive-output.csv")
 
 
 if __name__ == '__main__':

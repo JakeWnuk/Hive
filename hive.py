@@ -8,12 +8,12 @@
 import argparse
 import asyncio
 import concurrent.futures
+import datetime as dt
 import os
 import re
 import time
 from io import StringIO
 from ipaddress import ip_address
-import datetime as dt
 
 import pandas as pd
 
@@ -163,8 +163,8 @@ class Hive:
                 printer("Sorry Hive can only scan ranges with the 4th octect being 0 or 255", error=True)
                 exit()
         else:
-            self.subnet_list = [('192.168.191.0', '192.168.191.255')]
-            # ("192.168.0.0", "192.168.255.255"), ("172.16.0.0", "172.31.255.255"), ("10.0.0.0", "10.255.255.255")]
+            self.subnet_list = [("192.168.0.0", "192.168.255.255"),
+                                ("172.16.0.0", "172.31.255.255"), ("10.0.0.0", "10.255.255.255")]
 
         try:
             asyncio.run(self._gen_drones())
@@ -410,19 +410,27 @@ def cycle(hive, sleep, itr):
             master_df = df
             master_df['FIRST SEEN'] = tm
         else:
-            printer('Sleeping until ' + str((dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
-            time.sleep((int(sleep)*60))
+            printer('Sleeping until ' + str(
+                (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
+            time.sleep((int(sleep) * 60))
 
-            new_df = master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'], indicator=True).loc[lambda x: x['_merge'] == 'right_only']
+            new_df = \
+                master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
+                                indicator=True).loc[
+                    lambda x: x['_merge'] == 'right_only']
             new_df.drop(columns=['_merge'], inplace=True)
             new_df['FIRST SEEN'] = tm
 
-            rm_df = master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'], indicator=True).loc[lambda x: x['_merge'] == 'left_only']
+            rm_df = \
+                master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
+                                indicator=True).loc[
+                    lambda x: x['_merge'] == 'left_only']
             rm_df.drop(columns=['_merge'], inplace=True)
             rm_df['LAST SEEN'] = tm
 
             master_df = master_df.append(new_df)
-            master_df = master_df.merge(rm_df, how='left', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
+            master_df = master_df.merge(rm_df, how='left',
+                                        on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
 
             new_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
             rm_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))

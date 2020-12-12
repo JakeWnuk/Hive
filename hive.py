@@ -13,6 +13,7 @@ import re
 import time
 from io import StringIO
 from ipaddress import ip_address
+import datetime as dt
 
 import pandas as pd
 
@@ -76,15 +77,15 @@ def printer(msg, intro=False, event=False, error=False, warn=False, end=False):
         print(
             f'{colors.OKBLUE}{colors.BOLD} {msg}{colors.ENDC}')
     elif end:
-        print(f'{colors.BLINK}{colors.OKBLUE}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
+        print(f'{colors.OKBLUE}{colors.BOLD}[ # ] [{tm}] {msg}{colors.ENDC}')
     elif warn:
         print(f'{colors.WARNING}{colors.BOLD}[ * ] [{tm}] {msg}{colors.ENDC}')
     elif error:
         print(f'{colors.FAIL}[ ! ] [{tm}] {msg}{colors.ENDC}')
     elif event:
-        print(f'{colors.OKGREEN}[ + ] [{tm}] {msg}{colors.ENDC}')
+        print(f'{colors.OKGREEN}[ + ] [{tm}] {colors.ENDC}{msg}')
     else:
-        print(f'{colors.OKCYAN}[ - ] [{tm}] {msg}{colors.ENDC}')
+        print(f'{colors.OKCYAN}[ - ] [{tm}] {colors.ENDC}{msg}')
 
 
 def parse_range(string):
@@ -162,8 +163,8 @@ class Hive:
                 printer("Sorry Hive can only scan ranges with the 4th octect being 0 or 255", error=True)
                 exit()
         else:
-            self.subnet_list = [
-                ("192.168.0.0", "192.168.255.255"), ("172.16.0.0", "172.31.255.255"), ("10.0.0.0", "10.255.255.255")]
+            self.subnet_list = [('192.168.191.0', '192.168.191.255')]
+            # ("192.168.0.0", "192.168.255.255"), ("172.16.0.0", "172.31.255.255"), ("10.0.0.0", "10.255.255.255")]
 
         try:
             asyncio.run(self._gen_drones())
@@ -234,11 +235,11 @@ class Hive:
             "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
             self.ip_target + ".txt --max-retries 4 --host-timeout 90m  --script-timeout 90m " + self.ip_target,
             do_print=self.verbose)
-        
+
         # print targeted info
         trgt = await run(
-             "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
-             ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
+            "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
+            ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
         printer("Port Information: \n" + str(trgt))
 
         # check results
@@ -306,13 +307,16 @@ class Hive:
         df = pd.read_csv(file_str, sep=";")
         df.dropna(subset=["PORT"], inplace=True)
         df.drop(columns=["FQDN"], inplace=True)
-        df.set_index("IP", inplace=True)
+        printer("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
+
         df.to_csv(self.wd + "/hive-output.csv")
 
         with open(self.wd + "/subs.txt", "w") as text_file:
             print(f"Found Subs: \n{out_subs}", file=text_file)
 
         printer("Hive has completed. Have a nice day.", end=True)
+
+        return df
 
 
 class Drone:
@@ -387,6 +391,55 @@ class Drone:
         self.enumResults = std_out
 
 
+def cycle(hive, sleep, itr):
+    """
+    Controls how many scan cycles to perform
+    :param hive: hive class
+    :param sleep: int of min to sleep
+    :param itr: number of times to scan
+    :return: none
+    """
+    tm = time.strftime("%H:%M:%S")
+
+    master_df = ""
+    for i in range(int(itr)):
+        hive.operate()
+        df = hive.report()
+
+        if i == 0:
+            master_df = df
+            master_df['FIRST SEEN'] = tm
+        else:
+            printer('Sleeping until ' + str((dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
+            time.sleep((int(sleep)*60))
+
+            new_df = master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'], indicator=True).loc[lambda x: x['_merge'] == 'right_only']
+            new_df.drop(columns=['_merge'], inplace=True)
+            new_df['FIRST SEEN'] = tm
+
+            rm_df = master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'], indicator=True).loc[lambda x: x['_merge'] == 'left_only']
+            rm_df.drop(columns=['_merge'], inplace=True)
+            rm_df['LAST SEEN'] = tm
+
+            master_df = master_df.append(new_df)
+            master_df = master_df.merge(rm_df, how='left', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
+
+            new_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
+            rm_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
+
+            if not new_ips:
+                pass
+            else:
+                printer('New hosts found: \n' + str(new_ips), event=True)
+
+            if not rm_ips:
+                pass
+            else:
+                printer('Ghosted hosts: \n' + str(rm_ips), error=True)
+
+    master_df.to_csv(wd + "/hive-output.csv")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Network reconnaissance tool to discover hosts, ports, and perform targeted recon.')
@@ -395,12 +448,16 @@ if __name__ == '__main__':
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
     group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
-                       help="Enter an IP range instead of predefined private range. Separate with '-'.")
+                       help="Enter a /24 IP range instead of predefined ranges. Separate with '-'.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
     parser.add_argument("-w", "--workers", action="store", default=50,
                         help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
+    group.add_argument("-c", "--cycles", action="store", default=1,
+                       help="Number of scan cycles to perform. Default is 1.")
+    parser.add_argument("-s", "--sleep", action="store", default=60,
+                        help="Number of minutes to sleep between scan cycles. Default is 60.")
     args = parser.parse_args()
 
     # check for dependencies
@@ -423,5 +480,8 @@ if __name__ == '__main__':
     else:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.workers)
 
-    myHive.operate()
-    myHive.report()
+    if args.cycles == 1:
+        myHive.operate()
+        myHive.report()
+    else:
+        cycle(myHive, args.sleep, args.cycles)

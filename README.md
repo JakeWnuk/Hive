@@ -39,6 +39,8 @@ This will display help for the tool. Here are all the options it supports.
 |-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
 |-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|
 |-w | --workers  |Changes the number of max workers in the thread pool.   |`hive.py -w 20`|
+|-c | --cycles   |Number of scan cycles to perform. Default is 1. | `hive.py -c 5`|
+|-s | --sleep   |Number of minutes to sleep between scan cycles. Default is 60." | `hive -c 4 -s 30`|
 
 ## Installation
 

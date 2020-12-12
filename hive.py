@@ -9,6 +9,7 @@ import argparse
 import asyncio
 import concurrent.futures
 import datetime as dt
+import ipaddress
 import os
 import re
 import time
@@ -67,7 +68,7 @@ def message(msg, intro=False, event=False, error=False, warn=False, end=False):
         OKCYAN = '\033[96m'
         OKGREEN = "\033[32m"
         WARNING = '\033[93m'
-        FAIL = '\033[91m'
+        FAIL = '\033[31m'
         ENDC = '\033[0m'
         BOLD = '\033[1m'
 
@@ -120,10 +121,31 @@ async def run(cmd, return_stdout=False, do_print=False):
         return stdout.decode('ascii').rstrip()
 
 
+def report_cidr(wrk_dir, df):
+    """
+    prints a file with ips in CIDR format
+    :param wrk_dir: working directory to write
+    :param df: pd.DataFrame of hive output
+    """
+    out_file = ""
+    ip_lst = set(df.IP.unique().tolist())
+    nets = [ipaddress.ip_network(ip) for ip in ip_lst]
+    cidr = list(ipaddress.collapse_addresses(nets))
+    for i in cidr:
+        out_file += format(i) + '\n'
+
+    with open(wrk_dir + "/cidr.txt", "w") as text_file:
+        print(f"{out_file}", file=text_file)
+
+
 def sleepy(minutes):
+    """
+    Used in cycle to control sleep time
+    :param minutes: minutes to sleep
+    """
     tm = time.strftime("%H:%M:%S")
     message('Sleeping until ' + str(
-        (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(hours=1)).strftime("%H:%M:%S")), warn=True)
+        (dt.datetime.strptime(tm, "%H:%M:%S") + dt.timedelta(minutes=minutes)).strftime("%H:%M:%S")), warn=True)
     time.sleep((int(minutes) * 60))
 
 
@@ -133,7 +155,6 @@ def cycle(hive, sleep, itr):
     :param hive: hive class
     :param sleep: int of min to sleep
     :param itr: number of times to scan
-    :return: none
     """
     try:
         master_df = pd.DataFrame()
@@ -182,10 +203,13 @@ def cycle(hive, sleep, itr):
                 new_df = new_df.iloc[0:0]
                 rm_df = rm_df.iloc[0:0]
 
+                # write output
+                report_cidr(wd, master_df)
+                master_df.to_csv(wd + "/hive-output.csv")
+
                 # sleep for given minutes
                 sleepy(sleep)
 
-            master_df.to_csv(wd + "/hive-output.csv")
     except KeyboardInterrupt:
         message("Stopping Hive!", warn=True)
 
@@ -338,7 +362,7 @@ class Hive:
         """
         Tells drone class to scan all of the given ranges with multi-threading and found targets are enumerated
         """
-        message("Deploying Swarm!", warn=True)
+        message("Deploying swarm!", warn=True)
         with concurrent.futures.ThreadPoolExecutor(max_workers=int(self.workers)) as executor:
             try:
                 executor.map(Drone.is_alive, self.Drones)
@@ -359,11 +383,9 @@ class Hive:
         """
         message("Number of successful drones: " + str(len(self.Drones)), warn=True)
         out_csv = ""
-        out_subs = ""
+
         for i in self.Drones:
-            message(str(i.get_range()[0]) + "-" + str(i.get_range()[1]))
             out_csv += str(i.get_harvest())
-            out_subs += str(i.get_range()[0]) + "-" + str(i.get_range()[1]) + "\n"
 
         # aggregate results
         string_match = '"IP";"FQDN";"PORT";"PROTOCOL";"SERVICE";"VERSION"'
@@ -377,9 +399,7 @@ class Hive:
         message("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
 
         df.to_csv(self.wd + "/hive-output.csv")
-
-        with open(self.wd + "/subs.txt", "w") as text_file:
-            print(f"Found Subs: \n{out_subs}", file=text_file)
+        report_cidr(self.wd, df)
 
         message("Hive has completed. Have a nice day.", end=True)
 

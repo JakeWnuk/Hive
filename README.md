@@ -42,7 +42,7 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 -   `nmap -sS -T4 -Pn -p- --max-retries 4 --host-timeout 90m  --script-timeout 90m`
 -   `nmap -sU -T4 -Pn --top-ports 1500 --max-retries 4 --host-timeout 90m  --script-timeout 90m`
 -   Found ports will be passed to an NSE scan: 
-    - `nmap -T4 -sSU -Pn -sC -sV --script vuln -p <found ports> --max-retries 4 --host-timeout 90m  --script-timeout 90m`
+    - `nmap -T4 -sSU -Pn -sC -sV --script vuln -p <PORTS> --max-retries 4 --host-timeout 90m  --script-timeout 90m`
 
 **Hive** will then do basic checks on the pulled information to give feedback on the results for quick assessment. This mode is not designed to be the full extent of enumeration but rather aid in mass target selection. (Also great for CTFs)
 

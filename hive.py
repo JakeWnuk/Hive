@@ -285,7 +285,7 @@ class Hive:
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 --top-ports 500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
+                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )

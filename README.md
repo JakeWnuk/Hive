@@ -59,7 +59,7 @@ When doing discovery and enumeration the default mode is to scan and enumeration
         -   All nmap scans for every drone.
     -   target
         -   All output from `--target` function.
-        -   When scanning multiple targets and the output dir is the same all scans aggregate here.
+        -   When scanning multiple targets and the output directory is the same all scans aggregate here.
         -   To quickly search contents `find` can be very useful. `find . -name <FILE> -exec grep <REGEX> {} \;`
     -   cidr file
         -   File with all found IP's converted to CIDR ranges.

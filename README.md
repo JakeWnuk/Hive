@@ -7,7 +7,7 @@
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/JakeWnuk/Hive/issues)
 [![Python 3.9](https://img.shields.io/badge/Python-3.9-green)
 
-**Hive** is a lightweight network enumeration tool designed for enumerating private ranges and single targets asynchronously and concurrently.
+**Hive** is a lightweight network enumeration tool designed for enumerating private/public ranges and single targets asynchronously and concurrently.
 
 ## Resources
 

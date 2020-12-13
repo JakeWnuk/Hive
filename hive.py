@@ -175,19 +175,13 @@ def cycle(hive, sleep, itr):
                 new_df.drop(columns=['_merge'], inplace=True)
                 new_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
 
-                rm_df = \
-                    master_df.merge(df, how='outer', on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION'],
-                                    indicator=True).loc[
-                        lambda x: x['_merge'] == 'left_only']
-                rm_df.drop(columns=['_merge'], inplace=True)
-                rm_df['LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
-
                 master_df = master_df.append(new_df)
-                master_df = master_df.merge(rm_df, how='left',
-                                            on=['IP', 'PORT', 'PROTOCOL', 'SERVICE', 'VERSION', 'FIRST SEEN'])
 
                 new_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
                 rm_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
+
+                for x in rm_ips:
+                    master_df.loc[master_df['IP'] == x, 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
 
                 if not new_ips:
                     pass
@@ -201,7 +195,6 @@ def cycle(hive, sleep, itr):
 
                 # clear df
                 new_df = new_df.iloc[0:0]
-                rm_df = rm_df.iloc[0:0]
 
                 # write output
                 report_cidr(wd, master_df)
@@ -465,14 +458,14 @@ class Drone:
         """
         message("Starting Nmap for " + self.name)
         std_out = os.popen(
-            '(nmap -n -T4 -sV -sU --top-ports 20 ' +
+            '{ nmap -n -T4 -sV -sU --top-ports 20 ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
-            self.name + '.txt 2>/dev/null &' +
+            self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
             'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
-            self.name + '.txt 2>/dev/null) | grep -iv "filtered" | nmaptocsv 2>/dev/null').read()
+            self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()
 
         message("Nmap finished for " + self.name, event=True)
         self.enumResults = std_out
@@ -523,3 +516,4 @@ if __name__ == '__main__':
         myHive.report()
     else:
         cycle(myHive, args.sleep, args.cycles)
+

@@ -27,8 +27,8 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 
 **Hive** uses Nmap for enumeration and service detection the configuration of the scan can be modified within the code itself. The default settings are:
 
--   `nmap -n -T4 -sV -sU --top-ports 20 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
--   `nmap -n -T4 -sV -sS --top-ports 20 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
+-   `nmap -n -T4 -sV -sU --top-ports 50 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
+-   `nmap -n -T4 -sV -sS --top-ports 50 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
 
 
 #### Single Target Enumeration

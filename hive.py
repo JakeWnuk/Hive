@@ -33,6 +33,9 @@ async def gen_ip_range(start, end):
 
 
 def dep_check():
+    """
+    Checks for bash dependencies
+    """
     if not os.path.exists('/usr/bin/fping'):
         message("Missing dependency fping!", error=True)
         exit()
@@ -123,7 +126,7 @@ async def run(cmd, return_stdout=False, do_print=False):
 
 def report_cidr(wrk_dir, df):
     """
-    prints a file with ips in CIDR format
+    Prints a file with ips in CIDR format
     :param wrk_dir: working directory to write
     :param df: pd.DataFrame of hive output
     """
@@ -174,10 +177,10 @@ def cycle(hive, sleep, itr):
                         lambda x: x['_merge'] == 'right_only']
                 new_df.drop(columns=['_merge'], inplace=True)
                 new_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
-
-                master_df = master_df.append(new_df)
-
+                
+                # check for new hosts before append then check for removed
                 new_ips = list(set(df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
+                master_df = master_df.append(new_df)
                 rm_ips = list(set(master_df.IP.unique().tolist()) - set(df.IP.unique().tolist()))
 
                 for x in rm_ips:

@@ -177,8 +177,8 @@ def cycle(hive, sleep, itr):
 
                 master_df = master_df.append(new_df)
 
-                new_ips = list(set(new_df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
-                rm_ips = list(set(master_df.IP.unique().tolist()) - set(new_df.IP.unique().tolist()))
+                new_ips = list(set(df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
+                rm_ips = list(set(master_df.IP.unique().tolist()) - set(df.IP.unique().tolist()))
 
                 for x in rm_ips:
                     master_df.loc[master_df['IP'] == x, 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
@@ -193,15 +193,16 @@ def cycle(hive, sleep, itr):
                 else:
                     message('Ghosted hosts: \n' + str(rm_ips), error=True)
 
-                # clear df
-                new_df = new_df.iloc[0:0]
-
                 # write output
                 report_cidr(wd, master_df)
                 master_df.to_csv(wd + "/hive-output.csv")
 
-                # sleep for given minutes
-                sleepy(sleep)
+                if i != int(itr):
+                    message('Finished cycle ' + str(i+1) + '/' + str(itr))
+                    # sleep for given minutes
+                    sleepy(sleep)
+                else:
+                    message("Hive has completed. Have a nice day.", end=True)
 
     except KeyboardInterrupt:
         message("Stopping Hive!", warn=True)
@@ -285,7 +286,7 @@ class Hive:
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
+                "nmap -sU -T4 --top-ports 500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
@@ -458,11 +459,11 @@ class Drone:
         """
         message("Starting Nmap for " + self.name)
         std_out = os.popen(
-            '{ nmap -n -T4 -sV -sU --top-ports 20 ' +
+            '{ nmap -n -T4 -sV -sU --top-ports 50 ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
             self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
-            'nmap -n -T4 -Pn -sV -sS --top-ports 20 ' +
+            'nmap -n -T4 -Pn -sV -sS --top-ports 50 ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
             self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()

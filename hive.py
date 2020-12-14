@@ -168,6 +168,7 @@ def cycle(hive, sleep, itr):
             if i == 0:
                 master_df = df
                 master_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+                master_df['LAST SEEN'] = ''
                 # sleep for given minutes
                 sleepy(sleep)
             else:

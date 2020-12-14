@@ -184,7 +184,7 @@ def cycle(hive, sleep, itr):
                 rm_ips = list(set(master_df.IP.unique().tolist()) - set(df.IP.unique().tolist()))
 
                 for x in rm_ips:
-                    master_df.loc[master_df['IP'] == x, 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+                    master_df.loc[(master_df['IP'] == x) & (master_df['LAST SEEN'].isnull()), 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
 
                 if not new_ips:
                     pass

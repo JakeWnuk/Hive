@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="static/hive.png" alt="hive" width="150px"></a>
+  <img src="static/hive-logo.png" alt="hive" width="125px"></a>
 </h1>
 <h1 align="center">
  Hive

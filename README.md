@@ -1,11 +1,13 @@
 <h1 align="center">
-  Hive
-  <br>
+  <img src="static/hive.png" alt="hive" width="150px"></a>
 </h1>
+<h1 align="center">
+ Hive
+ </h1>
 
-[![License](https://img.shields.io/badge/license-MIT-_red.svg)](https://opensource.org/licenses/MIT)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/JakeWnuk/Hive/issues)
-[![Python 3.9](https://img.shields.io/badge/Python-3.9-green)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-blue.svg?style=flat)](https://github.com/JakeWnuk/Hive/issues)
+[![Python 3.9](https://img.shields.io/badge/Python-3.9-blue)
 
 **Hive** is a lightweight network enumeration tool designed for enumerating private/public ranges and single targets asynchronously and concurrently.
 

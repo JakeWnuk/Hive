@@ -51,7 +51,7 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 #### Continous Discovery and Enumeration
 ![Image](../master/static/hive-cycle.png?raw=true)
 
-**Hive** supports continous scanning with the `-c` or `--cycles` flag along with the `-s` or `--sleep` flag to begin scanning then sleep until the next round of scanning. **Hive* will report on found hosts, new hosts, and disappeared hosts then aggregated all of the resulting scans into a single result file showing when a host/port first appeared and was last seen.
+**Hive** supports continous scanning with the `-c` or `--cycles` flag along with the `-s` or `--sleep` flag to begin scanning then sleep until the next round of scanning. **Hive** will report on found hosts, new hosts, and disappeared hosts then aggregated all of the resulting scans into a single result file showing when a host/port first appeared and was last seen.
 
 ## Output
 

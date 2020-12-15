@@ -49,7 +49,7 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 **Hive** will then do basic checks on the pulled information to give feedback on the results for quick assessment. This mode is not designed to be the full extent of enumeration but rather aid in mass target selection. (Also great for CTFs)
 
 #### Continous Discovery and Enumeration
-![Image](../master/static/hive-cycle.png?raw=true)
+![Image](../master/static/hive-cycles.png?raw=true)
 
 **Hive** supports continous scanning with the `-c` or `--cycles` flag along with the `-s` or `--sleep` flag to begin scanning then sleep until the next round of scanning. **Hive** will report on found hosts, new hosts, and disappeared hosts then aggregated all of the resulting scans into a single result file showing when a host/port first appeared and was last seen.
 

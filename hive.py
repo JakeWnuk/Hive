@@ -199,13 +199,15 @@ def cycle(hive, sleep, itr):
 
                 # write output
                 report_cidr(wd, master_df)
+                master_df.reset_index(drop=True, inplace=True)
                 master_df.to_csv(wd + "/hive-output.csv")
 
-                if i != int(itr):
+                if i+1 != int(itr):
                     message('Finished cycle ' + str(i+1) + '/' + str(itr))
                     # sleep for given minutes
                     sleepy(sleep)
                 else:
+                    message('Finished cycle ' + str(i+1) + '/' + str(itr))
                     message("Hive has completed. Have a nice day.", end=True)
 
     except KeyboardInterrupt:

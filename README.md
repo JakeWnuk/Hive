@@ -23,11 +23,13 @@
 #### Range Discovery and Enumeration 
 ![Image](../master/static/hive-demo.png?raw=true)
 
-**Hive** works by first generating IP ranges for host discovery then divides the generated ranges into blocks of addresses. **Hive** takes those ranges and assigns them to drones, which then sends ICMP packets to all hosts within a range. If any hosts are found within the range, the responsible drone begins asynchronous enumeration. All drones act concurrently set to the maximum number of workers specified. Output is aggregated into a single folder with the scans, found ranges, and a easy to read csv.
+**Hive** works by first generating IP ranges for host discovery then divides the generated ranges into blocks of addresses. **Hive** takes those ranges and assigns them to drones, sending ICMP packets to all hosts within a range. If any hosts are found within the range, the responsible drone begins asynchronous enumeration. All drones act concurrently set to the maximum number of workers specified. The output is aggregated into a single folder with the scans, found ranges, and an easy-to-read CSV.
 
-When doing discovery and enumeration the default mode is to scan and enumeration all private address ranges. This can be modified with the `-r` or `--range` flag to specify a given range. If enumeration is not desired and only host discovery should be performed this can be done with the `-n` or `--noscan` flag to prevent drones from starting enumeration.
+When doing discovery and enumeration, the default mode is to scan and enumeration all private address ranges. This setting is modified by the `-r` or `--range` flag to specify a given range. If enumeration is not desired and only host discovery should be performed, the `-n` or `--noscan` flag can be provided to prevent drones from starting enumeration.
 
-**Hive** uses Nmap for enumeration and service detection the configuration of the scan can be modified within the code itself. The default settings are:
+**Hive** concurrency is done through two python libraries, *asyncio*, and *subprocess*. *Asyncio* is ideal for I/O bound processes and is used throughout **Hive** to speed up scans and interact with Bash. The *subprocess* library is used when doing range enumeration for the ThreadPoolExecutor subclass, which uses a pool of worker threads to execute calls asynchronously. The number of max workers in the pool can be manipulated with the `-s` or `--speed` flag for three predefined settings: 32 workers (default), 50 workers, and 68 workers. This will release the GIL but note that the higher the settings will increase concurrency and the memory footprint. 
+
+**Hive** uses Nmap for enumeration and service detection. The configuration of the scan can be modified within the code. The default settings are:
 
 -   `nmap -n -T4 -sV -sU --top-ports 50 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
 -   `nmap -n -T4 -sV -sS --top-ports 50 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
@@ -36,7 +38,7 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 #### Single Target Enumeration
 ![Image](../master/static/hive-target.png?raw=true)
 
-**Hive** also has the ability to perform single target enumeration using common commands for port scanning and DNS reconnaissance. This information will be stored in its own folder for easy access. **Hive** uses several commands to perform single target enumeration and many more can be added/edited within the code itself with minimal effort. The default scans are:
+**Hive** also can perform single target enumeration using common commands for port scanning and DNS reconnaissance. This information will be stored in a folder for easy access. **Hive** uses several commands to perform single target enumeration, and many more can be added/edited with minimal effort. The default scans are:
   
 -   `host` to pull out IPv4 and IPv6 addresses routing information. 
 -   `whois` to pull records in the databases maintained by several Network Information Centers (NICs).
@@ -46,28 +48,28 @@ When doing discovery and enumeration the default mode is to scan and enumeration
 -   Found ports will be passed to an NSE scan: 
     - `nmap -T4 -sSU -Pn -sC -sV --script vuln -p <PORTS> --max-retries 4 --host-timeout 90m  --script-timeout 90m`
 
-**Hive** will then do basic checks on the pulled information to give feedback on the results for quick assessment. This mode is not designed to be the full extent of enumeration but rather aid in mass target selection. (Also great for CTFs)
+**Hive** will then do necessary checks on the pulled information to quickly give feedback on results. This mode is not designed to be the full extent of enumeration but rather aid in mass target selection (also great for CTFs).
 
 #### Continous Discovery and Enumeration
 ![Image](../master/static/hive-cycles.png?raw=true)
 
-**Hive** supports continous scanning with the `-c` or `--cycles` flag along with the `-w` or `--wait` flag to begin scanning then sleep until the next round of scanning. **Hive** will report on found hosts, new hosts, and disappeared hosts then aggregated all of the resulting scans into a single result file showing when a host/port first appeared and was last seen.
+**Hive** supports continuous scanning with the `-c` or `--cycles` flag along with the `-w` or `--wait` flag to begin scanning, then sleep until the next round of scanning. **Hive** will report on found hosts, new hosts, and disappeared hosts, then aggregated all of the resulting scans into a single result file showing when a host/port first appeared and was last seen.
 
 ## Output
 
-**Hive** writes output to a folder, with no options it will write to the working directory but the output directory can be specified with `-o` or `--output`. The output is as following:
+**Hive** writes output to a folder; with no options, it will write to the working directory, but the output directory can be specified with `-o` or `--output`. The output is as follows:
 
 -   hive-output
     -   scans
-        -   All nmap scans for every drone.
+        -   All Nmap scans for every drone
     -   target
-        -   All output from `--target` function.
-        -   When scanning multiple targets and the output directory is the same all scans aggregate here.
+        -   All output from `--target` function
+        -   When scanning multiple targets and the output directory is the same, all scans aggregate here
         -   To quickly search contents `find` can be very useful. `find . -name <FILE> -exec grep <REGEX> {} \;`
-    -   cidr file
-        -   File with all found IP's converted to CIDR ranges.
+    -   CIDR file
+        -   File with all found IP's converted to CIDR ranges
     -   hive-output.csv
-        -   aggregated CSV file with the result of all scans.
+        -   Aggregated CSV file with the result of all scans
 
 
 ## Usage

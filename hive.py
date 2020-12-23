@@ -178,14 +178,15 @@ def cycle(hive, sleep, itr):
                         lambda x: x['_merge'] == 'right_only']
                 new_df.drop(columns=['_merge'], inplace=True)
                 new_df['FIRST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
-                
+
                 # check for new hosts before append then check for removed
                 new_ips = list(set(df.IP.unique().tolist()) - set(master_df.IP.unique().tolist()))
                 master_df = master_df.append(new_df)
                 rm_ips = list(set(master_df.IP.unique().tolist()) - set(df.IP.unique().tolist()))
 
                 for x in rm_ips:
-                    master_df.loc[(master_df['IP'] == x) & (master_df['LAST SEEN'].isnull()), 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
+                    master_df.loc[(master_df['IP'] == x) & (
+                        master_df['LAST SEEN'].isnull()), 'LAST SEEN'] = dt.datetime.now().strftime("%H:%M:%S")
 
                 if not new_ips:
                     pass
@@ -202,12 +203,12 @@ def cycle(hive, sleep, itr):
                 master_df.reset_index(drop=True, inplace=True)
                 master_df.to_csv(wd + "/hive-output.csv")
 
-                if i+1 != int(itr):
-                    message('Finished cycle ' + str(i+1) + '/' + str(itr))
+                if i + 1 != int(itr):
+                    message('Finished cycle ' + str(i + 1) + '/' + str(itr))
                     # sleep for given minutes
                     sleepy(sleep)
                 else:
-                    message('Finished cycle ' + str(i+1) + '/' + str(itr))
+                    message('Finished cycle ' + str(i + 1) + '/' + str(itr))
                     message("Hive has completed. Have a nice day.", end=True)
 
     except KeyboardInterrupt:
@@ -219,7 +220,7 @@ class Hive:
     Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", workers=50):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", workers=32):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -490,11 +491,11 @@ if __name__ == '__main__':
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
-    parser.add_argument("-w", "--workers", action="store", default=50,
-                        help="Max workers for ThreadPoolExecutor. Edit with caution. Default is 50.")
+    parser.add_argument("-s", "--speed", action="store", type=int, choices=[1, 2, 3], default=0,
+                        help="Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 0 edit with caution.")
     group.add_argument("-c", "--cycles", action="store", default=1,
                        help="Number of scan cycles to perform. Default is 1.")
-    parser.add_argument("-s", "--sleep", action="store", default=60,
+    parser.add_argument("-w", "--wait", action="store", default=60,
                         help="Number of minutes to sleep between scan cycles. Default is 60.")
     args = parser.parse_args()
 
@@ -508,19 +509,26 @@ if __name__ == '__main__':
         os.makedirs(os.path.join(wd, "target"), exist_ok=True)
         os.makedirs(os.path.join(wd, "scans"), exist_ok=True)
 
+    # set speed
+    if args.speed == 3:
+        args.speed = 68
+    elif args.speed == 2:
+        args.speed = 50
+    else:
+        args.speed = 32
+
     # kick off
     if args.target:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd,
-                      workers=args.workers)
+                      workers=args.speed)
     elif args.range:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd,
-                      workers=args.workers)
+                      workers=args.speed)
     else:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.workers)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.speed)
 
     if args.cycles == 1:
         myHive.operate()
         myHive.report()
     else:
-        cycle(myHive, args.sleep, args.cycles)
-
+        cycle(myHive, args.wait, args.cycles)

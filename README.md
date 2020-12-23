@@ -86,9 +86,9 @@ This will display help for the tool. Here are all the options it supports.
 |-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|
 |-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
 |-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|
-|-w | --workers  |Changes the number of max workers in the thread pool.   |`hive.py -w 20`|
+|-s | --speed  |Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 1 edit with caution. |`hive.py -s 3`|
 |-c | --cycles   |Number of scan cycles to perform. Default is 1. | `hive.py -c 5`|
-|-s | --sleep   |Number of minutes to sleep between scan cycles. Default is 60." | `hive -c 4 -s 30`|
+|-w | --wait   |Number of minutes to wait between scan cycles. Default is 60." | `hive -c 4 -w 30`|
 
 ## Installation
 

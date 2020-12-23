@@ -13,10 +13,30 @@
 
 ## Resources
 
--   [Features](#features)
 -   [Usage](#usage)
+-   [Features](#features)
 -   [Output](#output)
 -   [Installation](#installation)
+
+## Usage
+
+```sh
+hive.py -h
+```
+
+This will display help for the tool. Here are all the options it supports.
+
+|Flag |  Full Flag Option              | Description  |Example|
+|-----|-------------------------|-------------------------------------------------------|-------------------------------|
+|None | No flags set  | Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory. |`hive.py`|
+|-v | --verbosity |Increases the output verbosity. |`hive.py -v`|
+|-t | --target  |Changes the mode to single target enumeration. |`hive.py -t 127.0.0.1`|
+|-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|
+|-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
+|-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|
+|-s | --speed  |Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 1 edit with caution. |`hive.py -s 3`|
+|-c | --cycles   |Number of scan cycles to perform. Default is 1. | `hive.py -c 5`|
+|-w | --wait   |Number of minutes to wait between scan cycles. Default is 60." | `hive -c 4 -w 30`|
 
 ## Features
 
@@ -70,27 +90,6 @@ When doing discovery and enumeration, the default mode is to scan and enumeratio
         -   File with all found IP's converted to CIDR ranges
     -   hive-output.csv
         -   Aggregated CSV file with the result of all scans
-
-
-## Usage
-
-```sh
-hive.py -h
-```
-
-This will display help for the tool. Here are all the options it supports.
-
-|Flag |  Full Flag Option              | Description  |Example|
-|-----|-------------------------|-------------------------------------------------------|-------------------------------|
-|None | No flags set  | Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory. |`hive.py`|
-|-v | --verbosity |Increases the output verbosity. |`hive.py -v`|
-|-t | --target  |Changes the mode to single target enumeration. |`hive.py -t 127.0.0.1`|
-|-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|
-|-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
-|-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|
-|-s | --speed  |Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 1 edit with caution. |`hive.py -s 3`|
-|-c | --cycles   |Number of scan cycles to perform. Default is 1. | `hive.py -c 5`|
-|-w | --wait   |Number of minutes to wait between scan cycles. Default is 60." | `hive -c 4 -w 30`|
 
 ## Installation
 

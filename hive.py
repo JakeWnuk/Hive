@@ -399,6 +399,7 @@ class Hive:
         df.drop(columns=["FQDN"], inplace=True)
         message("Number of hosts found: " + str(len(df["IP"].unique())), warn=True)
 
+        df.reset_index(drop=True, inplace=True)
         df.to_csv(self.wd + "/hive-output.csv")
         report_cidr(self.wd, df)
 

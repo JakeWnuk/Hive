@@ -220,7 +220,7 @@ class Hive:
     Hive Jobs: creates the drones, operates the drones for scanning and enum, and aggregates the drones reports
     """
 
-    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", workers=32):
+    def __init__(self, harvest=False, verbose=False, ip_range="", ip_target="", work_dir="", workers=32, ports=50):
         """
         :param harvest: bool to run enumeration scan on found ips
         :param verbose: bool for verbosity
@@ -235,13 +235,15 @@ class Hive:
         self.wd = work_dir
         self.Drones = []
         self.workers = workers
+        self.ports = ports
 
         message('''       __ ___         
       / // (_)  _____ 
      / _  / / |/ / -_)
     /_//_/_/|___/\__/  v1.0
 ''', intro=True)
-        message("NUMBER OF WORKERS: " + str(workers), warn=True)
+        message("NUMBER OF WORKERS: " + str(self.workers), warn=True)
+        message("NUMBER OF PORTS TO SCAN: " + str(self.ports), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())
@@ -293,7 +295,7 @@ class Hive:
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 --top-ports 500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
+                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
                 ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
@@ -357,7 +359,7 @@ class Hive:
         for i in ip_ranges:
             split_ip_ranges = chunk_list(i, 256)
             for x in split_ip_ranges:
-                self.Drones.append(Drone(x[0], x[-1], x, self.wd, self.harvest, self.verbose))
+                self.Drones.append(Drone(x[0], x[-1], x, self.wd, self.harvest, self.verbose, self.ports))
 
     def operate(self):
         """
@@ -413,7 +415,7 @@ class Drone:
     Drones are given an IP range to scan and then harvest IP's if their range has an alive IP address inside
     """
 
-    def __init__(self, ip_start, ip_end, ip_list, work_dir, harvest=False, verbose=True):
+    def __init__(self, ip_start, ip_end, ip_list, work_dir, harvest=False, verbose=True, ports=50):
         self.name = "Drone-" + str(ip_start) + "-" + str(ip_end)
         self.ipRange = (ip_start, ip_end)
         self.ipList = ip_list
@@ -422,6 +424,7 @@ class Drone:
         self.verbose = verbose
         self.enumResults = ""
         self.wd = work_dir
+        self.ports = ports
 
     def get_status(self):
         """
@@ -467,11 +470,11 @@ class Drone:
         """
         message("Starting Nmap for " + self.name)
         std_out = os.popen(
-            '{ nmap -n -T4 -sV -sU --top-ports 50 ' +
+            '{ nmap -n -T4 -sV -sU --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
             self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
-            'nmap -n -T4 -Pn -sV -sS --top-ports 50 ' +
+            'nmap -n -T4 -Pn -sV -sS --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
             self.name + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()
@@ -484,20 +487,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Network reconnaissance tool to discover hosts, ports, and perform targeted recon.')
     group = parser.add_mutually_exclusive_group()
-    parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")
     group.add_argument("-t", "--target", action="store", default=False,
                        help="Enumerates only one target. This will port scan!")
     group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
                        help="Enter a /24 IP range instead of predefined ranges. Separate with '-'.")
+    parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")
+    group.add_argument("-c", "--cycles", action="store", default=1,
+                       help="Number of scan cycles to perform. Default is 1.")
     parser.add_argument("-n", "--noscan", action="store_false", default=True,
                         help="Only performs fping and no enumeration. Does not affect --target.")
     parser.add_argument("-o", "--output", action="store", default=os.getcwd(), help="Output directory. Default is cwd.")
     parser.add_argument("-s", "--speed", action="store", type=int, choices=[1, 2, 3], default=0,
                         help="Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 0 edit with caution.")
-    group.add_argument("-c", "--cycles", action="store", default=1,
-                       help="Number of scan cycles to perform. Default is 1.")
     parser.add_argument("-w", "--wait", action="store", default=60,
                         help="Number of minutes to sleep between scan cycles. Default is 60.")
+    parser.add_argument("-p", "--ports", action="store", default=50,
+                        help="Number of ports to set nmap top ports to. Default is 50.")
     args = parser.parse_args()
 
     # check for dependencies
@@ -518,15 +523,17 @@ if __name__ == '__main__':
     else:
         args.speed = 32
 
+    print(args.ports)
+
     # kick off
     if args.target:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd,
-                      workers=args.speed)
+                      workers=args.speed, ports=args.ports)
     elif args.range:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd,
-                      workers=args.speed)
+                      workers=args.speed, ports=args.ports)
     else:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.speed)
+        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, work_dir=wd, workers=args.speed, ports=args.ports)
 
     if args.cycles == 1:
         myHive.operate()

@@ -37,6 +37,7 @@ This will display help for the tool. Here are all the options it supports.
 |-s | --speed  |Speed options (workers) 1 (32w), 2 (50w), or 3 (68w). Default is 1 edit with caution. |`hive.py -s 3`|
 |-c | --cycles   |Number of scan cycles to perform. Default is 1. | `hive.py -c 5`|
 |-w | --wait   |Number of minutes to wait between scan cycles. Default is 60." | `hive -c 4 -w 30`|
+|-p | --ports   |Number of ports to set nmap top ports to. Default is 50." | `hive -p 250`|
 
 ## Features
 

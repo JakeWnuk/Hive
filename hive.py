@@ -290,12 +290,12 @@ class Hive:
                 self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
                 return_stdout=True, do_print=self.verbose),
             run(
-                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/nmap-ss-" + self.ip_target +
+                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/nmap-ss-" + self.ip_target + '-' +
                 "65535p-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target +
+                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target + '-' +
                 "1500p-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
@@ -473,11 +473,11 @@ class Drone:
             '{ nmap -n -T4 -sV -sU --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
-            self.name + str(self.ports) + 'p-%R-%D' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
+            self.name + '-' + str(self.ports) + 'p-%R-%D' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
             'nmap -n -T4 -Pn -sV -sS --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
-            self.name + str(
+            self.name + '-' + str(
                 self.ports) + 'p-%R-%D' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()
 
         message("Nmap finished for " + self.name, event=True)
@@ -523,8 +523,6 @@ if __name__ == '__main__':
         args.speed = 50
     else:
         args.speed = 32
-
-    print(args.ports)
 
     # kick off
     if args.target:

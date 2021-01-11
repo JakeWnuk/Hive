@@ -473,12 +473,12 @@ class Drone:
             '{ nmap -n -T4 -sV -sU --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-su-' +
-            self.name + '-' + str(self.ports) + 'p-%R-%D' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
+            self.name + '-' + str(self.ports) + 'p' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv; ' +
             'nmap -n -T4 -Pn -sV -sS --top-ports ' + str(self.ports) + ' ' +
             str(self.ipRange[0]) +
             '/24 --max-retries 4 --host-timeout 45m  --script-timeout 45m -oN ' + self.wd + '/scans/nmap-ss-' +
             self.name + '-' + str(
-                self.ports) + 'p-%R-%D' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()
+                self.ports) + 'p' + '.txt 2>/dev/null | grep -v "filtered" | nmaptocsv 2>/dev/null; }').read()
 
         message("Nmap finished for " + self.name, event=True)
         self.enumResults = std_out

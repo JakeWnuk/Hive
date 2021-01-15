@@ -243,7 +243,6 @@ class Hive:
     /_//_/_/|___/\__/  v1.0
 ''', intro=True)
         message("NUMBER OF WORKERS: " + str(self.workers), warn=True)
-        message("NUMBER OF PORTS TO SCAN: " + str(self.ports), warn=True)
 
         if ip_target != "":
             asyncio.run(self._target_enum())

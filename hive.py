@@ -270,6 +270,29 @@ class Hive:
         Function used for single target enumeration
         """
         message("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
+        
+        quick_stdout = await asyncio.gather(
+            run(
+                "nmap -sS -T4 -Pn -F -oN " + self.wd + "/target/quick-nmap-ss-" + self.ip_target + '-' +
+                "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
+                return_stdout=True,
+                do_print=self.verbose),
+            run(
+                "nmap -sU -T4 -F -oN " + self.wd + "/target/quick-nmap-su-" + self.ip_target + '-' +
+                "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
+                do_print=self.verbose)
+        )
+        
+        # read the nmap results for a port list
+        quick_ports = await run(
+            "cat " + self.wd + "/target/quick-nmap-s*-" + self.ip_target +
+            "*.txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
+            "/target/quick-ports-" + self.ip_target + ".txt",
+            return_stdout=True, do_print=self.verbose)
+        
+        quick_ports = quick_ports.split('\n')
+        message("Fast Scan Found Ports: " + str(quick_ports), event=True)
+        
         stdout = await asyncio.gather(
             run(
                 "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target +
@@ -312,7 +335,7 @@ class Hive:
         # read the nmap results for a port list
         ports = await run(
             "cat " + self.wd + "/target/nmap-s*-" + self.ip_target +
-            ".txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
+            "*.txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
             "/target/ports-" + self.ip_target + ".txt",
             return_stdout=True, do_print=self.verbose)
 

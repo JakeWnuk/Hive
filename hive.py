@@ -273,12 +273,12 @@ class Hive:
         
         quick_stdout = await asyncio.gather(
             run(
-                "nmap -sS -T4 -Pn -F -oN " + self.wd + "/target/quick-nmap-ss-" + self.ip_target + '-' +
+                "nmap -sS -sCV -T4 -Pn -F -oN " + self.wd + "/target/quick-nmap-ss-" + self.ip_target + '-' +
                 "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 return_stdout=True,
                 do_print=self.verbose),
             run(
-                "nmap -sU -T4 -F -oN " + self.wd + "/target/quick-nmap-su-" + self.ip_target + '-' +
+                "nmap -sU -T4 -sCV -F -oN " + self.wd + "/target/quick-nmap-su-" + self.ip_target + '-' +
                 "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
                 do_print=self.verbose)
         )
@@ -322,12 +322,6 @@ class Hive:
                 do_print=self.verbose)
         )
 
-        # get results of host and dig to make sure they align for ipv4
-        dig_ips = re.sub(r'\t', '', stdout[3]).split('\n')
-        host_ips = stdout[0].split('\n')
-        dig_ips.sort()
-        host_ips.sort()
-
         # use information to build profile
         ipv4 = stdout[0].split('\n')
         ipv6 = stdout[1].split('\n')
@@ -357,17 +351,6 @@ class Hive:
             "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
             ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
         message("Port Information: \n" + str(trgt))
-
-        # check results
-        try:
-            if dig_ips != host_ips:
-                message("The dig and host command results do not align.", warn=True)
-            if "No match for" in stdout[2]:
-                message("No whois match found for given domain.", warn=True)
-            if "0 hosts up" in stdout[4]:
-                message("Nmap failed to resolve a target for the given domain.", error=True)
-        except ValueError:
-            message("Error when reviewing results!", error=True)
 
         message("Hive has completed. Have a nice day.", end=True)
 

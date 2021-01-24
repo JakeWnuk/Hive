@@ -69,7 +69,7 @@ When doing discovery and enumeration, the default mode is to scan and enumeratio
 -   Found ports will be passed to an NSE scan: 
     - `nmap -T4 -sSU -Pn -sC -sV --script vuln -p <PORTS> --max-retries 4 --host-timeout 90m  --script-timeout 90m`
 
-**Hive** will then do necessary checks on the pulled information to quickly give feedback on results. This mode is not designed to be the full extent of enumeration but rather aid in mass target selection (also great for CTFs).
+This mode is not designed to be the full extent of enumeration but rather aid in mass target selection (also great for CTFs).
 
 #### Continous Discovery and Enumeration
 ![Image](../master/static/hive-cycles.png?raw=true)

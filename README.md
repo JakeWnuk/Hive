@@ -97,7 +97,7 @@ This mode is not designed to be the full extent of enumeration but rather aid in
 Download the repo.
 
 ```sh
-▶ git clone https://github.com/JakeWnuk/Hive
+▶ git clone https://github.com/JakeWnuk/hive.git
 ```
 
 Install the dependencies.

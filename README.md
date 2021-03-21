@@ -56,21 +56,6 @@ When doing discovery and enumeration, the default mode is to scan and enumeratio
 -   `nmap -n -T4 -sV -sS --top-ports 50 --max-retries 4 --host-timeout 45m  --script-timeout 45m`
 
 
-#### Single Target Enumeration
-![Image](../master/static/hive-target.png?raw=true)
-
-**Hive** also can perform single target enumeration using common commands for port scanning and DNS reconnaissance. This information will be stored in a folder for easy access. **Hive** uses several commands to perform single target enumeration, and many more can be added/edited with minimal effort. The default scans are:
-  
--   `host` to pull out IPv4 and IPv6 addresses routing information. 
--   `whois` to pull records in the databases maintained by several Network Information Centers (NICs).
--   `dig` to perform DNS lookups and display answers that are returned from the name server(s) that were queried.
--   `nmap -sS -T4 -Pn -p- --max-retries 4 --host-timeout 90m  --script-timeout 90m`
--   `nmap -sU -T4 -Pn --top-ports 1500 --max-retries 4 --host-timeout 90m  --script-timeout 90m`
--   Found ports will be passed to an NSE scan: 
-    - `nmap -T4 -sSU -Pn -sC -sV --script vuln -p <PORTS> --max-retries 4 --host-timeout 90m  --script-timeout 90m`
-
-This mode is not designed to be the full extent of enumeration but rather aid in mass target selection (also great for CTFs).
-
 #### Continous Discovery and Enumeration
 ![Image](../master/static/hive-cycles.png?raw=true)
 

@@ -244,10 +244,6 @@ class Hive:
 ''', intro=True)
         message("NUMBER OF WORKERS: " + str(self.workers), warn=True)
 
-        if ip_target != "":
-            asyncio.run(self._target_enum())
-            exit()
-
         if ip_range != "":
             # check last octet for ranges
             if int(ip_range[0][0][-1]) == 0 and int(ip_range[0][1][-3:]) == 255:
@@ -264,95 +260,6 @@ class Hive:
         except ValueError:
             message("Invalid range provided. Expected form like 10.0.0.0-10.255.255.255", error=True)
             exit()
-
-    async def _target_enum(self):
-        """
-        Function used for single target enumeration
-        """
-        message("Starting recon and enumeration on " + str(self.ip_target) + "...", warn=True)
-        
-        quick_stdout = await asyncio.gather(
-            run(
-                "nmap -sS -sCV -T4 -Pn -F -oN " + self.wd + "/target/quick-nmap-ss-" + self.ip_target + '-' +
-                "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
-                return_stdout=True,
-                do_print=self.verbose),
-            run(
-                "nmap -sU -T4 -sCV -F -oN " + self.wd + "/target/quick-nmap-su-" + self.ip_target + '-' +
-                "fastp-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
-                do_print=self.verbose)
-        )
-        
-        # read the nmap results for a port list
-        quick_ports = await run(
-            "cat " + self.wd + "/target/quick-nmap-s*-" + self.ip_target +
-            "*.txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
-            "/target/quick-ports-" + self.ip_target + ".txt",
-            return_stdout=True, do_print=self.verbose)
-        
-        quick_ports = quick_ports.split('\n')
-        message("Fast Scan Found Ports: " + str(quick_ports), event=True)
-        
-        stdout = await asyncio.gather(
-            run(
-                "host " + self.ip_target + " | tee " + self.wd + "/target/host-" + self.ip_target +
-                ".txt | grep address | grep -iv ipv6 | cut -d ' ' -f 4 | tee " + self.wd + "/target/ipv4-" +
-                self.ip_target + ".txt",
-                return_stdout=True, do_print=self.verbose),
-            run(
-                "host " + self.ip_target + " | grep address | grep -i ipv6 | cut -d ' ' -f 5 | tee " + self.wd +
-                "/target/ipv6-" + self.ip_target + ".txt",
-                return_stdout=True, do_print=self.verbose),
-            run(
-                "whois " + self.ip_target + " | tee " + self.wd + "/target/whois-" + self.ip_target +
-                ".txt | tr -cd '\11\12\15\40-\176'",
-                return_stdout=True, do_print=self.verbose),
-            run(
-                "dig " + self.ip_target + " +nostats +nocomments +nocmd | tee " + self.wd + "/target/dig-" +
-                self.ip_target + ".txt | grep A | cut -d 'A' -f 2 | grep '.'",
-                return_stdout=True, do_print=self.verbose),
-            run(
-                "nmap -sS -T4 -Pn -p- -oN " + self.wd + "/target/nmap-ss-" + self.ip_target + '-' +
-                "65535p-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
-                return_stdout=True,
-                do_print=self.verbose),
-            run(
-                "nmap -sU -T4 --top-ports 1500 -oN " + self.wd + "/target/nmap-su-" + self.ip_target + '-' +
-                "1500p-%R-%D" + ".txt " + self.ip_target + " --max-retries 4 --host-timeout 90m  --script-timeout 90m",
-                do_print=self.verbose)
-        )
-
-        # use information to build profile
-        ipv4 = stdout[0].split('\n')
-        ipv6 = stdout[1].split('\n')
-
-        # read the nmap results for a port list
-        ports = await run(
-            "cat " + self.wd + "/target/nmap-s*-" + self.ip_target +
-            "*.txt | grep open | grep -iv filtered | cut -d '/' -f1 | sort -u | tee " + self.wd +
-            "/target/ports-" + self.ip_target + ".txt",
-            return_stdout=True, do_print=self.verbose)
-
-        # report findings
-        message("Found IPv4 Addresses: " + str(ipv4), event=True)
-        message("Found IPv6 Addresses: " + str(ipv6), event=True)
-        ports = ports.split('\n')
-        message("Found Ports: " + str(ports), event=True)
-        port_str = ','.join([str(elem) for elem in ports])
-
-        # kick off targeted NSE script
-        await run(
-            "nmap -T4 -sSU -Pn -sC -sV --script vuln -p " + port_str + " -oN " + self.wd + "/target/vuln-nmap-ssu-" +
-            self.ip_target + ".txt --max-retries 4 --host-timeout 90m  --script-timeout 90m " + self.ip_target,
-            do_print=self.verbose)
-
-        # print targeted info
-        trgt = await run(
-            "cat " + self.wd + "/target/vuln-nmap-ssu-" + self.ip_target +
-            ".txt | grep open | grep -E '[0-9]' | grep -v '|'", return_stdout=True)
-        message("Port Information: \n" + str(trgt))
-
-        message("Hive has completed. Have a nice day.", end=True)
 
     async def _gen_drones(self):
         """
@@ -493,8 +400,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Network reconnaissance tool to discover hosts, ports, and perform targeted recon.')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-t", "--target", action="store", default=False,
-                       help="Enumerates only one target. This will port scan!")
     group.add_argument("-r", "--range", type=parse_range, action="store", default=False,
                        help="Enter a /24 IP range instead of predefined ranges. Separate with '-'.")
     parser.add_argument("-v", "--verbosity", action="store_true", default=False, help="Increase output verbosity.")

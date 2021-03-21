@@ -30,7 +30,6 @@ This will display help for the tool. Here are all the options it supports.
 |-----|-------------------------|-------------------------------------------------------|-------------------------------|
 |None | No flags set  | Scans private IP ranges for live hosts then enumerates them. Results are created in current working directory. |`hive.py`|
 |-v | --verbosity |Increases the output verbosity. |`hive.py -v`|
-|-t | --target  |Changes the mode to single target enumeration. |`hive.py -t 127.0.0.1`|
 |-r | --range  |Scans a defined range for hosts then enumerates them. |`hive.py -r 10.0.0.0-10.255.255.255`|
 |-n | --noscan  |Only looks for live hosts and does not perform enumeration. |`hive.py -n`|
 |-o | --output  |Changes output location from cwd to specified directory.  |`hive.py -o ~/Desktop/`|

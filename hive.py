@@ -435,10 +435,7 @@ if __name__ == '__main__':
         args.speed = 32
 
     # kick off
-    if args.target:
-        myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_target=args.target, work_dir=wd,
-                      workers=args.speed, ports=args.ports)
-    elif args.range:
+    if args.range:
         myHive = Hive(harvest=args.noscan, verbose=args.verbosity, ip_range=args.range, work_dir=wd,
                       workers=args.speed, ports=args.ports)
     else:
